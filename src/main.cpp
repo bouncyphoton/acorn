@@ -26,6 +26,8 @@ static void acorn_run() {
     while (!window_should_close()) {
         window_update();
 
+        renderer_draw();
+
         window_swap_buffers();
     }
 }
