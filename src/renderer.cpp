@@ -4,30 +4,42 @@
 #include <GL/gl3w.h>
 #include <cstdio>
 
-static u32 fullscreen_shader = 0;
+static u32 material_shader = 0;
 
-const char *fullscreen_vertex_src = R"(#version 430 core
+const char *material_vertex_src = R"(#version 330 core
+layout (location = 0) in vec3 aPosition;
+layout (location = 1) in vec3 aNormal;
+
 out VertexData {
-    vec2 uv;
+    vec3 normal;
 } o;
 
-void main() {
-    float x = float(((uint(gl_VertexID) + 2u) / 3u) % 2u);
-    float y = float(((uint(gl_VertexID) + 1u) / 3u) % 2u);
+uniform mat4 uViewProjectionMatrix;
+uniform mat4 uModelMatrix;
+uniform mat4 uNormalMatrix;
 
-    gl_Position = vec4(x * 2.0f - 1.0f, y * 2.0f - 1.0f, 0.0f, 1.0f);
-    o.uv = vec2(x, y);
+void main() {
+    gl_Position = uViewProjectionMatrix * uModelMatrix * vec4(aPosition, 1);
+    o.normal = vec3(uNormalMatrix * vec4(aNormal, 1));
 })";
 
-const char *fullscreen_fragment_src = R"(#version 430 core
+const char *material_fragment_src = R"(#version 330 core
 layout (location = 0) out vec4 oFragColor;
 
 in VertexData {
-    vec2 uv;
+    vec3 normal;
 } i;
 
+uniform struct {
+    vec3 color;
+} uMaterial;
+
 void main() {
-    oFragColor = vec4(i.uv, vec2(0.5, 1));
+    vec3 N = normalize(i.normal);
+    vec3 L = normalize(vec3(0, 1, 1)); // light direction
+
+    vec3 color = uMaterial.color * dot(N, L);
+    oFragColor = vec4(color, 1);
 })";
 
 static void APIENTRY opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
@@ -42,8 +54,8 @@ bool renderer_init() {
     glDebugMessageCallback(opengl_debug_callback, nullptr);
 
     // init shaders
-    fullscreen_shader = shader_create(fullscreen_vertex_src, fullscreen_fragment_src);
-    if (fullscreen_shader == 0) {
+    material_shader = shader_create(material_vertex_src, material_fragment_src);
+    if (material_shader == 0) {
         return false;
     }
 
@@ -51,24 +63,32 @@ bool renderer_init() {
 }
 
 void renderer_shutdown() {
-    shader_destroy(fullscreen_shader);
+    shader_destroy(material_shader);
 }
 
-void renderer_draw() {
+void renderer_draw(renderable *renderables, u32 num_renderables) {
     glClear(GL_COLOR_BUFFER_BIT);
 
-    // TODO: remove test drawing
+    // TODO: optimize by removing redundant binds and uniform setting
+    shader_bind(material_shader);
 
-    static u32 vao = 0;
-    if (vao == 0) {
-        glGenVertexArrays(1, &vao);
+    // camera
+    glm::mat4 view_matrix = glm::lookAt(glm::vec3(0), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0));
+    glm::mat4 projection_matrix = glm::perspective(glm::half_pi<f32>(), 800.0f / 600.0f, 0.001f, 100.0f);
+    glm::mat4 view_projection_matrix = projection_matrix * view_matrix;
+    shader_set_mat4(material_shader, "uViewProjectionMatrix", view_projection_matrix);
+
+    // render renderables
+    for (u32 i = 0; i < num_renderables; ++i) {
+        renderable *current = &renderables[i];
+
+        glm::mat4 model_matrix = transform_to_matrix(&current->mesh_transform);
+        shader_set_mat4(material_shader, "uModelMatrix", model_matrix);
+        shader_set_mat4(material_shader, "uNormalMatrix", glm::transpose(glm::inverse(model_matrix)));
+        shader_set_vec3(material_shader, "uMaterial.color", current->mesh_material->color);
+
+        glBindVertexArray(current->mesh_data->vao);
+        glDrawArrays(GL_TRIANGLES, 0, current->mesh_data->num_vertices);
+
     }
-
-    // bind fullscreen shader
-    shader_bind(fullscreen_shader);
-
-    // send 6 vertices to bound shader
-    glBindVertexArray(vao);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    glBindVertexArray(0);
 }

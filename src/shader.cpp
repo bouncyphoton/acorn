@@ -82,3 +82,18 @@ void shader_destroy(u32 shader) {
 void shader_bind(u32 shader) {
     glUseProgram(shader);
 }
+
+// TODO: cache uniforms
+static s32 shader_get_uniform_location(u32 shader, const char *uniform_name) {
+    return glGetUniformLocation(shader, uniform_name);
+}
+
+void shader_set_vec3(u32 shader, const char *uniform_name, glm::vec3 value) {
+    s32 location = shader_get_uniform_location(shader, uniform_name);
+    glUniform3f(location, value.x, value.y, value.z);
+}
+
+void shader_set_mat4(u32 shader, const char *uniform_name, glm::mat4 value) {
+    s32 location = shader_get_uniform_location(shader, uniform_name);
+    glUniformMatrix4fv(location, 1, GL_FALSE, &value[0][0]);
+}
