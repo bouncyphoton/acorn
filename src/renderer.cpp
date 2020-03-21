@@ -38,7 +38,7 @@ void main() {
     vec3 N = normalize(i.normal);
     vec3 L = normalize(vec3(0, 1, 1)); // light direction
 
-    vec3 color = uMaterial.color * dot(N, L);
+    vec3 color = uMaterial.color * max(0, dot(N, L));
     oFragColor = vec4(color, 1);
 })";
 
