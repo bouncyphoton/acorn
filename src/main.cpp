@@ -26,39 +26,39 @@ static void acorn_shutdown() {
 static void acorn_run() {
     // TODO: remove test renderable
 
-    transform mesh_transform = {};
-    mesh_transform.position = glm::vec3(-0.5f, 0.5f, -1);
-    mesh_transform.orientation = glm::quat(glm::vec3(glm::half_pi<f32>(), 0, 0));
+    Transform transform = {};
+    transform.position = glm::vec3(-0.5f, 0.5f, -1);
+    transform.orientation = glm::quat(glm::vec3(glm::half_pi<f32>(), 0, 0));
 
-    mesh mesh_data = {};
-    mesh_data.num_vertices = 3;
-    mesh_data.vertices = (vertex *) malloc(sizeof(vertex) * mesh_data.num_vertices);
-    mesh_data.vertices[0] = {glm::vec3(0, 0, 0), glm::vec3(0, 1, 0)};
-    mesh_data.vertices[1] = {glm::vec3(0, 0, 1), glm::vec3(0, 1, 0)};
-    mesh_data.vertices[2] = {glm::vec3(1, 0, 1), glm::vec3(0, 1, 0)};
+    Mesh mesh = {};
+    mesh.num_vertices = 3;
+    mesh.vertices = (Vertex *) malloc(sizeof(Vertex) * mesh.num_vertices);
+    mesh.vertices[0] = {glm::vec3(0, 0, 0), glm::vec3(0, 1, 0)};
+    mesh.vertices[1] = {glm::vec3(0, 0, 1), glm::vec3(0, 1, 0)};
+    mesh.vertices[2] = {glm::vec3(1, 0, 1), glm::vec3(0, 1, 0)};
 
-    glGenVertexArrays(1, &mesh_data.vao);
-    glBindVertexArray(mesh_data.vao);
+    glGenVertexArrays(1, &mesh.vao);
+    glBindVertexArray(mesh.vao);
 
-    glGenBuffers(1, &mesh_data.vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, mesh_data.vbo);
-    glBufferData(GL_ARRAY_BUFFER, mesh_data.num_vertices * sizeof(vertex), mesh_data.vertices, GL_STATIC_DRAW);
+    glGenBuffers(1, &mesh.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
+    glBufferData(GL_ARRAY_BUFFER, mesh.num_vertices * sizeof(Vertex), mesh.vertices, GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (const void *) offsetof(vertex, position));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *) offsetof(Vertex, position));
 
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (const void *) offsetof(vertex, normal));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *) offsetof(Vertex, normal));
 
     glBindVertexArray(0);
 
-    material mesh_material = {};
-    mesh_material.color = glm::vec3(1, 0.5, 1);
+    Material material = {};
+    material.color = glm::vec3(1, 0.5, 1);
 
-    renderable obj = {};
-    obj.mesh_transform = mesh_transform;
-    obj.mesh_data = &mesh_data;
-    obj.mesh_material = &mesh_material;
+    Renderable obj = {};
+    obj.transform = transform;
+    obj.mesh = &mesh;
+    obj.material = &material;
 
     while (!window_should_close()) {
         window_update();
@@ -69,9 +69,9 @@ static void acorn_run() {
     }
 
     // TODO: delete
-    free(mesh_data.vertices);
-    glDeleteBuffers(1, &mesh_data.vbo);
-    glDeleteVertexArrays(1, &mesh_data.vao);
+    free(mesh.vertices);
+    glDeleteBuffers(1, &mesh.vbo);
+    glDeleteVertexArrays(1, &mesh.vao);
 }
 
 int main() {

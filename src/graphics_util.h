@@ -5,13 +5,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-struct transform {
+struct Transform {
     glm::vec3 position = glm::vec3(0);
     glm::quat orientation = glm::identity<glm::quat>();
     glm::vec3 scale = glm::vec3(1);
 };
 
-struct vertex {
+struct Vertex {
     glm::vec3 position;
     glm::vec3 normal;
 //    glm::vec3 tangent;
@@ -19,24 +19,24 @@ struct vertex {
 //    glm::vec2 uv;
 };
 
-struct mesh {
+struct Mesh {
     u32 num_vertices = 0;
     u32 vao = 0;
     u32 vbo = 0;
-    vertex *vertices = nullptr;
+    Vertex *vertices = nullptr;
 };
 
-struct material {
+struct Material {
     glm::vec3 color = glm::vec3(1);
 };
 
-struct renderable {
-    transform mesh_transform;
-    mesh *mesh_data = nullptr;
-    material *mesh_material = nullptr;
+struct Renderable {
+    Transform transform;
+    Mesh *mesh = nullptr;
+    Material *material = nullptr;
 };
 
-inline glm::mat4 transform_to_matrix(transform *transform) {
+inline glm::mat4 transform_to_matrix(Transform *transform) {
     if (transform == nullptr) return glm::mat4(1);
 
     glm::mat4 t = glm::translate(glm::mat4(1), transform->position);

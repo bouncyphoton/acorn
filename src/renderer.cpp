@@ -66,7 +66,7 @@ void renderer_shutdown() {
     shader_destroy(material_shader);
 }
 
-void renderer_draw(renderable *renderables, u32 num_renderables) {
+void renderer_draw(Renderable *renderables, u32 num_renderables) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     // TODO: optimize by removing redundant binds and uniform setting
@@ -80,15 +80,14 @@ void renderer_draw(renderable *renderables, u32 num_renderables) {
 
     // render renderables
     for (u32 i = 0; i < num_renderables; ++i) {
-        renderable *current = &renderables[i];
+        Renderable *current = &renderables[i];
 
-        glm::mat4 model_matrix = transform_to_matrix(&current->mesh_transform);
+        glm::mat4 model_matrix = transform_to_matrix(&current->transform);
         shader_set_mat4(material_shader, "uModelMatrix", model_matrix);
         shader_set_mat4(material_shader, "uNormalMatrix", glm::transpose(glm::inverse(model_matrix)));
-        shader_set_vec3(material_shader, "uMaterial.color", current->mesh_material->color);
+        shader_set_vec3(material_shader, "uMaterial.color", current->material->color);
 
-        glBindVertexArray(current->mesh_data->vao);
-        glDrawArrays(GL_TRIANGLES, 0, current->mesh_data->num_vertices);
-
+        glBindVertexArray(current->mesh->vao);
+        glDrawArrays(GL_TRIANGLES, 0, current->mesh->num_vertices);
     }
 }
