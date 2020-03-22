@@ -44,7 +44,11 @@ void main() {
 
 static void APIENTRY opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
                                            const GLchar *message, const void *user_param) {
-    fprintf(severity == GL_DEBUG_SEVERITY_HIGH ? stderr : stdout, "[debug][opengl] %s\n", message);
+    if (severity == GL_DEBUG_SEVERITY_HIGH) {
+        fprintf(stderr, "[error][opengl] %s\n", message);
+    } else {
+        fprintf(stdout, "[debug][opengl] %s\n", message);
+    }
 }
 
 bool renderer_init() {
