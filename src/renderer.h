@@ -7,6 +7,8 @@ bool renderer_init();
 
 void renderer_shutdown();
 
-void renderer_draw(Renderable *renderables, u32 num_renderables);
+void renderer_queue_renderable(Renderable renderable);
+
+void renderer_draw();
 
 #endif //ACORN_RENDERER_H

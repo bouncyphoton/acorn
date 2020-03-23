@@ -4,8 +4,17 @@
 #include <GL/gl3w.h>
 #include <cstdio>
 
+#define RENDERER_DEBUG_CHECKING_ENABLED true
+#define MAX_RENDERABLES 1
+
+// renderable queuing
+static u32 num_renderables_queued = 0;
+static Renderable renderables[MAX_RENDERABLES] = {};
+
+// shaders
 static u32 material_shader = 0;
 
+// TODO: don't hardcode shader sources
 const char *material_vertex_src = R"(#version 330 core
 layout (location = 0) in vec3 aPosition;
 layout (location = 1) in vec3 aNormal;
@@ -22,7 +31,6 @@ void main() {
     gl_Position = uViewProjectionMatrix * uModelMatrix * vec4(aPosition, 1);
     o.normal = vec3(uNormalMatrix * vec4(aNormal, 1));
 })";
-
 const char *material_fragment_src = R"(#version 330 core
 layout (location = 0) out vec4 oFragColor;
 
@@ -70,7 +78,43 @@ void renderer_shutdown() {
     shader_destroy(material_shader);
 }
 
-void renderer_draw(Renderable *renderables, u32 num_renderables) {
+void renderer_queue_renderable(Renderable renderable) {
+    if (num_renderables_queued >= MAX_RENDERABLES) {
+        fprintf(stderr, "[warn] tried to queue more renderables than MAX_RENDERABLES (%d)\n", MAX_RENDERABLES);
+        return;
+    }
+
+#if RENDERER_DEBUG_CHECKING_ENABLED
+    if (renderable.material == nullptr || renderable.mesh == nullptr) {
+        fprintf(stderr, "[error] tried to queue invalid renderable:\n"
+                        "Renderable {\n"
+                        "  .mesh     = %p\n"
+                        "  .material = %p\n"
+                        "}\n",
+                renderable.mesh, renderable.material);
+        return;
+    }
+
+    if (renderable.mesh->vertices == nullptr || renderable.mesh->num_vertices == 0
+        || renderable.mesh->vao == 0 || renderable.mesh->vbo == 0) {
+        fprintf(stderr, "[error] tried to queue renderable with invalid mesh:\n"
+                        "Mesh {\n"
+                        "  .vertices     = %p\n"
+                        "  .num_vertices = %u\n"
+                        "  .vao          = %u\n"
+                        "  .vbo          = %u\n"
+                        "}\n",
+                renderable.mesh->vertices, renderable.mesh->num_vertices, renderable.mesh->vao, renderable.mesh->vbo);
+        return;
+    }
+#endif
+
+    // queue renderable
+    renderables[num_renderables_queued] = renderable;
+    ++num_renderables_queued;
+}
+
+void renderer_draw() {
     glClear(GL_COLOR_BUFFER_BIT);
 
     // TODO: optimize by removing redundant binds and uniform setting
@@ -83,7 +127,7 @@ void renderer_draw(Renderable *renderables, u32 num_renderables) {
     shader_set_mat4(material_shader, "uViewProjectionMatrix", view_projection_matrix);
 
     // render renderables
-    for (u32 i = 0; i < num_renderables; ++i) {
+    for (u32 i = 0; i < num_renderables_queued; ++i) {
         Renderable *current = &renderables[i];
 
         glm::mat4 model_matrix = transform_to_matrix(&current->transform);
@@ -94,4 +138,7 @@ void renderer_draw(Renderable *renderables, u32 num_renderables) {
         glBindVertexArray(current->mesh->vao);
         glDrawArrays(GL_TRIANGLES, 0, current->mesh->num_vertices);
     }
+
+    // reset queued renderables
+    num_renderables_queued = 0;
 }
