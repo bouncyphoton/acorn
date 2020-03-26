@@ -5,11 +5,11 @@
 #include <cstdio>
 
 #define RENDERER_DEBUG_CHECKING_ENABLED true
-#define MAX_RENDERABLES 1
+#define MAX_RENDERABLES_PER_FRAME 1
 
 // renderable queuing
 static u32 num_renderables_queued = 0;
-static Renderable renderables[MAX_RENDERABLES] = {};
+static Renderable renderables[MAX_RENDERABLES_PER_FRAME] = {};
 
 // shaders
 static u32 material_shader = 0;
@@ -79,8 +79,8 @@ void renderer_shutdown() {
 }
 
 void renderer_queue_renderable(Renderable renderable) {
-    if (num_renderables_queued >= MAX_RENDERABLES) {
-        fprintf(stderr, "[warn] tried to queue more renderables than MAX_RENDERABLES (%d)\n", MAX_RENDERABLES);
+    if (num_renderables_queued >= MAX_RENDERABLES_PER_FRAME) {
+        fprintf(stderr, "[warn] tried to queue more renderables than MAX_RENDERABLES (%d)\n", MAX_RENDERABLES_PER_FRAME);
         return;
     }
 
@@ -114,15 +114,16 @@ void renderer_queue_renderable(Renderable renderable) {
     ++num_renderables_queued;
 }
 
-void renderer_draw() {
+void renderer_draw(GameState *game_state) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     // TODO: optimize by removing redundant binds and uniform setting
     shader_bind(material_shader);
 
     // camera
-    glm::mat4 view_matrix = glm::lookAt(glm::vec3(0), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0));
-    glm::mat4 projection_matrix = glm::perspective(glm::half_pi<f32>(), 800.0f / 600.0f, 0.001f, 100.0f);
+    f32 aspect_ratio = (f32)game_state->render_options.width / game_state->render_options.height;
+    glm::mat4 view_matrix = glm::lookAt(game_state->camera.position, game_state->camera.look_at, glm::vec3(0, 1, 0));
+    glm::mat4 projection_matrix = glm::perspective(glm::half_pi<f32>(), aspect_ratio, 0.001f, 100.0f);
     glm::mat4 view_projection_matrix = projection_matrix * view_matrix;
     shader_set_mat4(material_shader, "uViewProjectionMatrix", view_projection_matrix);
 

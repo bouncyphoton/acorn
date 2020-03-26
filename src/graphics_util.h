@@ -2,6 +2,7 @@
 #define ACORN_GRAPHICS_UTIL_H
 
 #include "types.h"
+#include "mesh.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
@@ -9,21 +10,6 @@ struct Transform {
     glm::vec3 position = glm::vec3(0);
     glm::quat orientation = glm::identity<glm::quat>();
     glm::vec3 scale = glm::vec3(1);
-};
-
-struct Vertex {
-    glm::vec3 position;
-    glm::vec3 normal;
-//    glm::vec3 tangent;
-//    glm::vec3 bitangent;
-//    glm::vec2 uv;
-};
-
-struct Mesh {
-    u32 num_vertices = 0;
-    u32 vao = 0;
-    u32 vbo = 0;
-    Vertex *vertices = nullptr;
 };
 
 struct Material {
