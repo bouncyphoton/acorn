@@ -8,7 +8,8 @@ add_executable(acorn third-party/gl3w/gl3w.c src/main.cpp src/types.h src/window
 target_include_directories(acorn PUBLIC
         src/
         third-party/gl3w/include
-        third-party/glm)
+        third-party/glm
+        third-party/tinyobjloader)
 
 # GLFW build settings
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)

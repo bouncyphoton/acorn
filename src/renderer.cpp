@@ -18,9 +18,11 @@ static u32 material_shader = 0;
 const char *material_vertex_src = R"(#version 330 core
 layout (location = 0) in vec3 aPosition;
 layout (location = 1) in vec3 aNormal;
+layout (location = 2) in vec3 aColor;
 
 out VertexData {
     vec3 normal;
+    vec3 color;
 } o;
 
 uniform mat4 uViewProjectionMatrix;
@@ -30,12 +32,14 @@ uniform mat4 uNormalMatrix;
 void main() {
     gl_Position = uViewProjectionMatrix * uModelMatrix * vec4(aPosition, 1);
     o.normal = vec3(uNormalMatrix * vec4(aNormal, 1));
+    o.color = aColor;
 })";
 const char *material_fragment_src = R"(#version 330 core
 layout (location = 0) out vec4 oFragColor;
 
 in VertexData {
     vec3 normal;
+    vec3 color;
 } i;
 
 uniform struct {
@@ -46,7 +50,7 @@ void main() {
     vec3 N = normalize(i.normal);
     vec3 L = normalize(vec3(0, 1, 1)); // light direction
 
-    vec3 color = uMaterial.color * max(0, dot(N, L));
+    vec3 color = i.color * uMaterial.color * max(0.1, dot(N, L));
     oFragColor = vec4(color, 1);
 })";
 
@@ -64,6 +68,8 @@ bool renderer_init() {
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     glDebugMessageCallback(opengl_debug_callback, nullptr);
+
+    glEnable(GL_DEPTH_TEST);
 
     // init shaders
     material_shader = shader_create(material_vertex_src, material_fragment_src);
@@ -115,7 +121,7 @@ void renderer_queue_renderable(Renderable renderable) {
 }
 
 void renderer_draw(GameState *game_state) {
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // TODO: optimize by removing redundant binds and uniform setting
     shader_bind(material_shader);

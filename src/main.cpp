@@ -12,10 +12,10 @@ static Material materials[NUM_MATERIALS] = {};
 
 static bool assets_load() {
     // load mesh
-    meshes[0] = mesh_load();
+    meshes[0] = mesh_load("../assets/naturePack_130.obj", "../assets/");
 
     // load material
-    materials[0].color = glm::vec3(1, 0.5, 1);
+    materials[0].color = glm::vec3(1);
 
     // check that assets loaded correctly
     for (u32 i = 0; i < NUM_MESHES; ++i) {
@@ -66,14 +66,13 @@ static void acorn_run() {
         window_update();
 
         // TODO: remove temporary camera movement
-        game_state.camera.position.x = sin(glfwGetTime());
+        game_state.camera.look_at = (meshes[0].min + meshes[0].max) / 2.0f;
+        game_state.camera.position = glm::vec3(cos(glfwGetTime()), 0, sin(glfwGetTime())) * 5.0f
+                                     + game_state.camera.look_at;
 
         // queue test renderable, TODO: remove
         renderer_queue_renderable(Renderable{
-                Transform{
-                        glm::vec3(-0.5f, 0.5f, -1),
-                        glm::quat(glm::vec3(glm::half_pi<f32>(), 0, 0))
-                },
+                Transform{},
                 &meshes[0],
                 &materials[0]
         });
