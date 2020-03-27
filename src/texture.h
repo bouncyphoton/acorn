@@ -4,7 +4,7 @@
 #include "types.h"
 
 enum class BuiltInTextureEnum {
-    MISSING, BLACK, WHITE
+    MISSING, BLACK, WHITE, NORMAL
 };
 
 bool textures_init();

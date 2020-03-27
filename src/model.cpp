@@ -53,6 +53,13 @@ Model model_load(const char *obj_path, const char *mtl_dir) {
 
             std::string albedo_path = dir + materials[i].diffuse_texname;
             model.materials[i].albedo_texture = texture_get(albedo_path.c_str());
+
+            std::string normal_path = dir + materials[i].normal_texname;
+            if (materials[i].normal_texname.empty()) {
+                // if no normal in mtl, use bump
+                normal_path += materials[i].bump_texname;
+            }
+            model.materials[i].normal_texture = texture_get(normal_path.c_str(), BuiltInTextureEnum::NORMAL);
         }
     }
 
@@ -65,7 +72,7 @@ Model model_load(const char *obj_path, const char *mtl_dir) {
             }
 
             u32 mesh_idx = shapes[s].mesh.material_ids[f];
-            u8 num_verts_per_face = shapes[s].mesh.num_face_vertices[f]; // this should always be 3 (TODO: check)
+            u8 num_verts_per_face = shapes[s].mesh.num_face_vertices[f]; // this should always be 3
 
             model.meshes[mesh_idx].num_vertices += num_verts_per_face;
         }
@@ -101,11 +108,11 @@ Model model_load(const char *obj_path, const char *mtl_dir) {
                             attrib.vertices[3 * idx.vertex_index + 1],
                             attrib.vertices[3 * idx.vertex_index + 2]
                     );
-                    current->normal = glm::vec3(
+                    current->normal = glm::normalize(glm::vec3(
                             attrib.normals[3 * idx.normal_index + 0],
                             attrib.normals[3 * idx.normal_index + 1],
                             attrib.normals[3 * idx.normal_index + 2]
-                    );
+                    ));
                     current->uv = glm::vec2(
                             attrib.texcoords[2 * idx.texcoord_index + 0],
                             attrib.texcoords[2 * idx.texcoord_index + 1]
@@ -116,6 +123,34 @@ Model model_load(const char *obj_path, const char *mtl_dir) {
 
                     ++current;
                 }
+
+                if (num_verts_per_face != 3) {
+                    fprintf(stderr, "[error] num_verts_per_face is not 3\n");
+                    continue;
+                }
+
+                // calculate tangent and bi-tangent
+                Vertex *v0 = current - 3;
+                Vertex *v1 = current - 2;
+                Vertex *v2 = current - 1;
+
+                glm::vec3 delta_pos_1 = v1->position - v0->position;
+                glm::vec3 delta_pos_2 = v2->position - v0->position;
+
+                glm::vec2 delta_uv_1 = v1->uv - v0->uv;
+                glm::vec2 delta_uv_2 = v2->uv - v0->uv;
+
+                float r = 1.0f / (delta_uv_1.x * delta_uv_2.y - delta_uv_1.y * delta_uv_2.x);
+                glm::vec3 tangent = (delta_pos_1 * delta_uv_2.y - delta_pos_2 * delta_uv_1.y) * r;
+                glm::vec3 bi_tangent = (delta_pos_2 * delta_uv_1.x - delta_pos_1 * delta_uv_2.x) * r;
+
+                // set tangent and bi-tangent
+                for (Vertex *v : {v0, v1, v2}) {
+                    // make tangent orthogonal to normal
+                    v->tangent = glm::normalize(tangent - v->normal * glm::dot(v->normal, tangent));
+                    v->bi_tangent = bi_tangent;
+                }
+
                 index_offset += num_verts_per_face;
             }
         }
@@ -150,6 +185,12 @@ Model model_load(const char *obj_path, const char *mtl_dir) {
 
         glEnableVertexAttribArray(2);
         glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *) offsetof(Vertex, uv));
+
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *) offsetof(Vertex, tangent));
+
+        glEnableVertexAttribArray(4);
+        glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *) offsetof(Vertex, bi_tangent));
 
         glBindVertexArray(0);
     }

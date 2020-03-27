@@ -22,10 +22,13 @@ const char *material_vertex_src = R"(#version 330 core
 layout (location = 0) in vec3 aPosition;
 layout (location = 1) in vec3 aNormal;
 layout (location = 2) in vec2 aUv;
+layout (location = 3) in vec3 aTangent;
+layout (location = 4) in vec3 aBiTangent;
 
 out VertexData {
     vec3 normal;
     vec2 uv;
+    mat3 tbn;
 } o;
 
 uniform mat4 uViewProjectionMatrix;
@@ -36,6 +39,12 @@ void main() {
     gl_Position = uViewProjectionMatrix * uModelMatrix * vec4(aPosition, 1);
     o.normal = vec3(uNormalMatrix * vec4(aNormal, 1));
     o.uv = aUv;
+
+    vec3 t = normalize(vec3(uModelMatrix * vec4(aTangent, 0)));
+    vec3 b = normalize(vec3(uModelMatrix * vec4(aBiTangent, 0)));
+    vec3 n = normalize(vec3(uModelMatrix * vec4(aNormal, 0)));
+    o.tbn = mat3(t, b, n);
+
 })";
 const char *material_fragment_src = R"(#version 330 core
 layout (location = 0) out vec4 oFragColor;
@@ -43,16 +52,18 @@ layout (location = 0) out vec4 oFragColor;
 in VertexData {
     vec3 normal;
     vec2 uv;
+    mat3 tbn;
 } i;
 
 uniform struct {
     sampler2D albedo;
+    sampler2D normal;
 } uMaterial;
 
 uniform vec3 uSunDirection;
 
 void main() {
-    vec3 N = normalize(i.normal);
+    vec3 N = normalize(i.tbn * (texture(uMaterial.normal, i.uv).rgb * 2 - 1));
     vec3 L = uSunDirection;
 
     float atten = max(0, dot(N, L)) * 0.5 + 0.5;
@@ -154,6 +165,10 @@ void renderer_draw(GameState *game_state) {
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, material->albedo_texture);
             shader_set_int(material_shader, "uMaterial.albedo", 0);
+
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, material->normal_texture);
+            shader_set_int(material_shader, "uMaterial.normal", 1);
 
             glBindVertexArray(mesh->vao);
             glDrawArrays(GL_TRIANGLES, 0, mesh->num_vertices);

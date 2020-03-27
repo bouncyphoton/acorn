@@ -11,6 +11,7 @@ static std::unordered_map<std::string, u32> texture_map;
 static u32 texture_black = 0;
 static u32 texture_white = 0;
 static u32 texture_missing = 0;
+static u32 texture_normal = 0;
 
 static u32 texture_generate(s32 width, s32 height, u8 *data, GLenum internal_format, GLenum format) {
     u32 texture;
@@ -37,7 +38,10 @@ bool textures_init() {
                          0, 0, 0, 255};
     texture_missing = texture_generate(2, 2, missing, GL_RGBA, GL_RGBA);
 
-    return texture_black != 0 && texture_white != 0 && texture_missing != 0;
+    u8 normal[4] = {127, 127, 255, 255};
+    texture_normal = texture_generate(1, 1, normal, GL_RGBA, GL_RGBA);
+
+    return texture_black != 0 && texture_white != 0 && texture_missing != 0 && texture_normal != 0;
 }
 
 void textures_shutdown() {
@@ -81,6 +85,8 @@ u32 texture_get_built_in(BuiltInTextureEnum texture) {
             return texture_black;
         case BuiltInTextureEnum::WHITE:
             return texture_white;
+        case BuiltInTextureEnum::NORMAL:
+            return texture_normal;
         default:
             fprintf(stderr, "[error] failed to get built in texture %d\n", (int)texture);
         case BuiltInTextureEnum::MISSING:
