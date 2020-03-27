@@ -1,7 +1,8 @@
 #include "window.h"
 #include "renderer.h"
-#include "game_state.h"
+#include "texture.h"
 #include "model.h"
+#include "game_state.h"
 #include <GLFW/glfw3.h>
 #include <cstdio>
 #include <chrono>
@@ -37,6 +38,7 @@ static bool acorn_init() {
 
     if (!window_init(game_state.render_options, window_title)) return false;
     if (!renderer_init()) return false;
+    if (!textures_init()) return false;
     if (!assets_load()) return false;
 
     puts("[info] acorn successfully initialized");
@@ -48,6 +50,7 @@ static void acorn_shutdown() {
     puts("[info] shutting down acorn");
 
     assets_unload();
+    textures_shutdown();
     renderer_shutdown();
     window_shutdown();
 }

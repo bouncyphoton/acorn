@@ -1,4 +1,5 @@
 #include "model.h"
+#include "texture.h"
 #include <GL/gl3w.h>
 
 // TODO: move away from OBJs at some point in favor of a more elegant and efficient way of store model data
@@ -6,42 +7,8 @@
 
 #include <tiny_obj_loader.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-
-#include <stb_image.h>
-
-#include <unordered_map>
-
 #undef min
 #undef max
-
-static u32 load_or_get_texture(const char *filename) {
-    static std::unordered_map<std::string, u32> texture_map;
-
-    auto it = texture_map.find(filename);
-    if (it != texture_map.end()) {
-        return it->second;
-    }
-
-    s32 width, height, channels;
-    stbi_set_flip_vertically_on_load(1);
-    u8 *data = stbi_load(filename, &width, &height, &channels, 4);
-    if (!data) {
-        fprintf(stderr, "[error] failed to load image \"%s\"\n", filename);
-        return 0;
-    }
-
-    u32 texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    stbi_image_free(data);
-
-    texture_map.emplace(filename, texture);
-    return texture;
-}
 
 Model model_load(const char *obj_path, const char *mtl_dir) {
     printf("[info] loading model \"%s\"\n", obj_path);
@@ -82,9 +49,10 @@ Model model_load(const char *obj_path, const char *mtl_dir) {
         model.materials[i] = {};
 
         if (!materials.empty()) {
-            std::string albedo_path = std::string(mtl_dir) + "/" + materials[i].diffuse_texname;
-            model.materials[i].albedo_texture = load_or_get_texture(albedo_path.c_str());
-            printf("diffuse tex %d: %s\n", model.materials[i].albedo_texture, materials[i].diffuse_texname.c_str());
+            std::string dir = std::string(mtl_dir) + "/";
+
+            std::string albedo_path = dir + materials[i].diffuse_texname;
+            model.materials[i].albedo_texture = texture_get(albedo_path.c_str());
         }
     }
 

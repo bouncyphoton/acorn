@@ -3,7 +3,7 @@ project(acorn)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(acorn third-party/gl3w/gl3w.c src/main.cpp src/types.h src/window.h src/window.cpp src/renderer.cpp src/renderer.h src/shader.cpp src/shader.h src/renderable.h src/game_state.h src/model.cpp src/model.h src/material.h src/transform.h)
+add_executable(acorn third-party/gl3w/gl3w.c src/main.cpp src/types.h src/window.h src/window.cpp src/renderer.cpp src/renderer.h src/shader.cpp src/shader.h src/renderable.h src/game_state.h src/model.cpp src/model.h src/material.h src/transform.h src/texture.cpp src/texture.h)
 
 target_include_directories(acorn PUBLIC
         src/
