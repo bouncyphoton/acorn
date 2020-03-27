@@ -5,7 +5,7 @@
 #include <cstdio>
 
 #define RENDERER_DEBUG_CHECKING_ENABLED true
-#define MAX_RENDERABLES_PER_FRAME 1
+#define MAX_RENDERABLES_PER_FRAME 10
 
 // renderable queuing
 static u32 num_renderables_queued = 0;
@@ -46,9 +46,11 @@ uniform struct {
     vec3 color;
 } uMaterial;
 
+uniform vec3 uSunDirection;
+
 void main() {
     vec3 N = normalize(i.normal);
-    vec3 L = normalize(vec3(0, 1, 1)); // light direction
+    vec3 L = uSunDirection;
 
     vec3 color = i.color * uMaterial.color * max(0.1, dot(N, L));
     oFragColor = vec4(color, 1);
@@ -126,10 +128,13 @@ void renderer_draw(GameState *game_state) {
     // TODO: optimize by removing redundant binds and uniform setting
     shader_bind(material_shader);
 
+    // sun
+    shader_set_vec3(material_shader, "uSunDirection", game_state->sun_direction);
+
     // camera
     f32 aspect_ratio = (f32)game_state->render_options.width / game_state->render_options.height;
     glm::mat4 view_matrix = glm::lookAt(game_state->camera.position, game_state->camera.look_at, glm::vec3(0, 1, 0));
-    glm::mat4 projection_matrix = glm::perspective(glm::half_pi<f32>(), aspect_ratio, 0.001f, 100.0f);
+    glm::mat4 projection_matrix = glm::perspective(game_state->camera.fov_radians, aspect_ratio, 0.001f, 100.0f);
     glm::mat4 view_projection_matrix = projection_matrix * view_matrix;
     shader_set_mat4(material_shader, "uViewProjectionMatrix", view_projection_matrix);
 
