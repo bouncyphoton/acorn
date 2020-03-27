@@ -4,7 +4,7 @@
 #include <GLFW/glfw3.h>
 #include <cstdio>
 
-#define NUM_MESHES 1
+#define NUM_MESHES 2
 #define NUM_MATERIALS 1
 // TODO: move meshes and materials data, preferably to a memory arena
 static Mesh meshes[NUM_MESHES] = {};
@@ -13,6 +13,7 @@ static Material materials[NUM_MATERIALS] = {};
 static bool assets_load() {
     // load mesh
     meshes[0] = mesh_load("../assets/naturePack_130.obj", "../assets/");
+    meshes[1] = mesh_load("../assets/naturePack_001.obj", "../assets/");
 
     // load material
     materials[0].color = glm::vec3(1);
@@ -43,6 +44,8 @@ static bool acorn_init() {
     game_state.render_options.height = 600;
     game_state.camera.position = glm::vec3(1, 0, 0);
     game_state.camera.look_at = glm::vec3(0, 0, -1);
+    game_state.camera.fov_radians = glm::half_pi<f32>();
+    game_state.sun_direction = glm::normalize(glm::vec3(1, 1, 1));
 
     if (!window_init(game_state.render_options.width, game_state.render_options.height, window_title)) return false;
     if (!renderer_init()) return false;
@@ -65,17 +68,29 @@ static void acorn_run() {
     while (!window_should_close()) {
         window_update();
 
-        // TODO: remove temporary camera movement
-        game_state.camera.look_at = (meshes[0].min + meshes[0].max) / 2.0f;
-        game_state.camera.position = glm::vec3(cos(glfwGetTime()), 0, sin(glfwGetTime())) * 5.0f
-                                     + game_state.camera.look_at;
+        // TODO: remove temporary update
+        {
+            game_state.camera.look_at = (meshes[0].min + meshes[0].max) / 2.0f;
+            game_state.camera.position =
+                    glm::vec3(cos(glfwGetTime()), 0, sin(glfwGetTime())) * 5.0f
+                    + game_state.camera.look_at;
 
-        // queue test renderable, TODO: remove
-        renderer_queue_renderable(Renderable{
-                Transform{},
-                &meshes[0],
-                &materials[0]
-        });
+            // tree
+            renderer_queue_renderable(Renderable{
+                    Transform{},
+                    &meshes[0],
+                    &materials[0]
+            });
+
+            // ground
+            renderer_queue_renderable(Renderable{
+                    Transform{
+                            glm::vec3(0, -meshes[1].max.y, 0)
+                    },
+                    &meshes[1],
+                    &materials[0]
+            });
+        }
 
         // draw frame
         renderer_draw(&game_state);
