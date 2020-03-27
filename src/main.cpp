@@ -4,6 +4,7 @@
 #include "model.h"
 #include <GLFW/glfw3.h>
 #include <cstdio>
+#include <chrono>
 
 #define NUM_MODELS 1
 // TODO: move data, preferably to a memory arena
@@ -34,7 +35,7 @@ static bool acorn_init() {
     game_state.camera.fov_radians = glm::half_pi<f32>();
     game_state.sun_direction = glm::normalize(glm::vec3(1, 1, 1));
 
-    if (!window_init(game_state.render_options.width, game_state.render_options.height, window_title)) return false;
+    if (!window_init(game_state.render_options, window_title)) return false;
     if (!renderer_init()) return false;
     if (!assets_load()) return false;
 
@@ -52,7 +53,13 @@ static void acorn_shutdown() {
 }
 
 static void acorn_run() {
+    auto last = std::chrono::system_clock::now();
     while (!window_should_close()) {
+        auto now = std::chrono::system_clock::now();
+        f32 ms_since_last_frame = std::chrono::duration_cast<std::chrono::microseconds>(now - last).count() / 1000.0f;
+        printf("frame took %.2fms (%d fps)\n", ms_since_last_frame, (int)(1000.0f / ms_since_last_frame));
+        last = now;
+
         window_update();
 
         // TODO: remove temporary update
@@ -73,6 +80,9 @@ static void acorn_run() {
 
         // draw frame
         renderer_draw(&game_state);
+
+        RenderStats stats = renderer_get_stats();
+        printf("render stats:\nverts: %d\ncalls: %d\n\n", stats.vertices_rendered, stats.draw_calls);
 
         window_swap_buffers();
     }

@@ -14,6 +14,9 @@ static Renderable renderables[MAX_RENDERABLES_PER_FRAME] = {};
 // shaders
 static u32 material_shader = 0;
 
+// render stats
+static RenderStats render_stats = {};
+
 // TODO: don't hardcode shader sources
 const char *material_vertex_src = R"(#version 330 core
 layout (location = 0) in vec3 aPosition;
@@ -118,6 +121,8 @@ void renderer_queue_renderable(Renderable renderable) {
 }
 
 void renderer_draw(GameState *game_state) {
+    render_stats = {};
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // TODO: optimize by removing redundant binds and uniform setting
@@ -152,9 +157,16 @@ void renderer_draw(GameState *game_state) {
 
             glBindVertexArray(mesh->vao);
             glDrawArrays(GL_TRIANGLES, 0, mesh->num_vertices);
+
+            ++render_stats.draw_calls;
+            render_stats.vertices_rendered += mesh->num_vertices;
         }
     }
 
     // reset queued renderables
     num_renderables_queued = 0;
+}
+
+RenderStats renderer_get_stats() {
+    return render_stats;
 }

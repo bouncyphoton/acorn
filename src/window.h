@@ -2,8 +2,9 @@
 #define ACORN_WINDOW_H
 
 #include "types.h"
+#include "game_state.h"
 
-bool window_init(u32 width, u32 height, const char *title);
+bool window_init(RenderOptions render_options, const char *title);
 
 void window_shutdown();
 

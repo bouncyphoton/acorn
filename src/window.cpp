@@ -9,7 +9,7 @@ static void glfw_error_callback(int error, const char *desc) {
     fprintf(stderr, "[error][glfw][%d] %s\n", error, desc);
 }
 
-bool window_init(u32 width, u32 height, const char *title) {
+bool window_init(RenderOptions render_options, const char *title) {
     if (!glfwInit()) {
         fprintf(stderr, "[error] failed to init GLFW\n");
         return false;
@@ -21,7 +21,7 @@ bool window_init(u32 width, u32 height, const char *title) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    window = glfwCreateWindow(width, height, title, nullptr, nullptr);
+    window = glfwCreateWindow(render_options.width, render_options.height, title, nullptr, nullptr);
 
     if (!window) {
         fprintf(stderr, "[error] failed to create window\n");
@@ -34,6 +34,8 @@ bool window_init(u32 width, u32 height, const char *title) {
         fprintf(stderr, "[error] failed to init gl3w\n");
         return false;
     }
+
+    glfwSwapInterval(render_options.vsync_num_swap_frames);
 
     return true;
 }
