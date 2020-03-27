@@ -1,0 +1,201 @@
+#include "model.h"
+#include <GL/gl3w.h>
+
+// TODO: move away from OBJs at some point in favor of a more elegant and efficient way of store model data
+#define TINYOBJLOADER_IMPLEMENTATION
+
+#include <tiny_obj_loader.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+
+#include <stb_image.h>
+
+#include <unordered_map>
+
+#undef min
+#undef max
+
+static u32 load_or_get_texture(const char *filename) {
+    static std::unordered_map<std::string, u32> texture_map;
+
+    auto it = texture_map.find(filename);
+    if (it != texture_map.end()) {
+        return it->second;
+    }
+
+    s32 width, height, channels;
+    stbi_set_flip_vertically_on_load(1);
+    u8 *data = stbi_load(filename, &width, &height, &channels, 4);
+    if (!data) {
+        fprintf(stderr, "[error] failed to load image \"%s\"\n", filename);
+        return 0;
+    }
+
+    u32 texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    stbi_image_free(data);
+
+    texture_map.emplace(filename, texture);
+    return texture;
+}
+
+Model model_load(const char *obj_path, const char *mtl_dir) {
+    printf("[info] loading model \"%s\"\n", obj_path);
+    Model model = {};
+
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string warn, err;
+
+    bool result = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, obj_path, mtl_dir, true);
+    if (!warn.empty()) {
+        printf("[warn] %s\n", warn.c_str());
+    }
+    if (!err.empty()) {
+        fprintf(stderr, "[error] %s\n", err.c_str());
+    }
+    if (!result) {
+        return model;
+    }
+
+    model.num_meshes = materials.size();
+    // we require at least one materials
+    if (model.num_meshes == 0) {
+        model.num_meshes = 1;
+    }
+
+    model.meshes = (Mesh *) malloc(sizeof(Mesh) * model.num_meshes);
+    model.materials = (Material *) malloc(sizeof(Material) * model.num_meshes);
+    if (model.meshes == nullptr || model.materials == nullptr) {
+        fprintf(stderr, "[error] failed to allocate memory for model meshes or materials\n");
+        return model;
+    }
+
+    // default init
+    for (u32 i = 0; i < model.num_meshes; ++i) {
+        model.meshes[i] = {};
+        model.materials[i] = {};
+
+        if (!materials.empty()) {
+            std::string albedo_path = std::string(mtl_dir) + "/" + materials[i].diffuse_texname;
+            model.materials[i].albedo_texture = load_or_get_texture(albedo_path.c_str());
+            printf("diffuse tex %d: %s\n", model.materials[i].albedo_texture, materials[i].diffuse_texname.c_str());
+        }
+    }
+
+    // pre-pass to figure out how large each mesh of model is
+    for (u32 s = 0; s < shapes.size(); ++s) {
+        for (u32 f = 0; f < shapes[s].mesh.num_face_vertices.size(); ++f) {
+            // material ids will be set to -1 if there aren't any materials
+            if (shapes[s].mesh.material_ids[f] < 0) {
+                shapes[s].mesh.material_ids[f] = 0;
+            }
+
+            u32 mesh_idx = shapes[s].mesh.material_ids[f];
+            u8 num_verts_per_face = shapes[s].mesh.num_face_vertices[f]; // this should always be 3 (TODO: check)
+
+            model.meshes[mesh_idx].num_vertices += num_verts_per_face;
+        }
+    }
+
+    // init meshes
+    for (u32 i = 0; i < model.num_meshes; ++i) {
+        // allocate memory for vertices
+        Mesh *mesh = &model.meshes[i];
+        mesh->vertices = (Vertex *) malloc(sizeof(Vertex) * mesh->num_vertices);
+        if (mesh->vertices == nullptr) {
+            fprintf(stderr, "[error] failed to allocate vertex memory for mesh\n");
+        }
+    }
+
+    // load vertex data for meshes, currently not an efficient way TODO: make more efficient
+    for (u32 m = 0; m < model.num_meshes; ++m) {
+        Mesh *mesh = &model.meshes[m];
+        Vertex *current = mesh->vertices;
+
+        for (u32 s = 0; s < shapes.size(); ++s) {
+            u32 index_offset = 0;
+            for (u32 f = 0; f < shapes[s].mesh.num_face_vertices.size(); ++f) {
+                u32 mesh_idx = shapes[s].mesh.material_ids[f];
+                if (mesh_idx != m) continue;
+
+                int num_verts_per_face = shapes[s].mesh.num_face_vertices[f];
+                for (u32 v = 0; v < num_verts_per_face; ++v) {
+                    tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
+
+                    current->position = glm::vec3(
+                            attrib.vertices[3 * idx.vertex_index + 0],
+                            attrib.vertices[3 * idx.vertex_index + 1],
+                            attrib.vertices[3 * idx.vertex_index + 2]
+                    );
+                    current->normal = glm::vec3(
+                            attrib.normals[3 * idx.normal_index + 0],
+                            attrib.normals[3 * idx.normal_index + 1],
+                            attrib.normals[3 * idx.normal_index + 2]
+                    );
+                    current->uv = glm::vec2(
+                            attrib.texcoords[2 * idx.texcoord_index + 0],
+                            attrib.texcoords[2 * idx.texcoord_index + 1]
+                    );
+
+                    mesh->min = glm::min(mesh->min, current->position);
+                    mesh->max = glm::max(mesh->max, current->position);
+
+                    ++current;
+                }
+                index_offset += num_verts_per_face;
+            }
+        }
+    }
+
+    // setup vbos and vaos for meshes
+    for (u32 i = 0; i < model.num_meshes; ++i) {
+        Mesh *mesh = &model.meshes[i];
+        if (mesh->num_vertices == 0) {
+            fprintf(stderr, "[error] tried to init mesh with 0 vertices\n");
+        }
+
+        // create vao and vbo for rendering
+        glGenVertexArrays(1, &mesh->vao);
+        if (mesh->vao == 0) {
+            fprintf(stderr, "[error] failed to generate vao for mesh\n");
+        }
+        glBindVertexArray(mesh->vao);
+
+        glGenBuffers(1, &mesh->vbo);
+        if (mesh->vbo == 0) {
+            fprintf(stderr, "[error] failed to generate vbo for mesh\n");
+        }
+        glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
+        glBufferData(GL_ARRAY_BUFFER, mesh->num_vertices * sizeof(Vertex), mesh->vertices, GL_STATIC_DRAW);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *) offsetof(Vertex, position));
+
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *) offsetof(Vertex, normal));
+
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *) offsetof(Vertex, uv));
+
+        glBindVertexArray(0);
+    }
+
+    return model;
+}
+
+void model_free(Model *model) {
+    for (u32 i = 0; i < model->num_meshes; ++i) {
+        Mesh *mesh = &model->meshes[i];
+        glDeleteBuffers(1, &mesh->vbo);
+        glDeleteVertexArrays(1, &mesh->vao);
+        free(mesh->vertices);
+    }
+    free(model->meshes);
+    free(model->materials);
+}

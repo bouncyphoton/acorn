@@ -18,11 +18,11 @@ static u32 material_shader = 0;
 const char *material_vertex_src = R"(#version 330 core
 layout (location = 0) in vec3 aPosition;
 layout (location = 1) in vec3 aNormal;
-layout (location = 2) in vec3 aColor;
+layout (location = 2) in vec2 aUv;
 
 out VertexData {
     vec3 normal;
-    vec3 color;
+    vec2 uv;
 } o;
 
 uniform mat4 uViewProjectionMatrix;
@@ -32,18 +32,18 @@ uniform mat4 uNormalMatrix;
 void main() {
     gl_Position = uViewProjectionMatrix * uModelMatrix * vec4(aPosition, 1);
     o.normal = vec3(uNormalMatrix * vec4(aNormal, 1));
-    o.color = aColor;
+    o.uv = aUv;
 })";
 const char *material_fragment_src = R"(#version 330 core
 layout (location = 0) out vec4 oFragColor;
 
 in VertexData {
     vec3 normal;
-    vec3 color;
+    vec2 uv;
 } i;
 
 uniform struct {
-    vec3 color;
+    sampler2D albedo;
 } uMaterial;
 
 uniform vec3 uSunDirection;
@@ -52,8 +52,9 @@ void main() {
     vec3 N = normalize(i.normal);
     vec3 L = uSunDirection;
 
-    vec3 color = i.color * uMaterial.color * max(0.1, dot(N, L));
-    oFragColor = vec4(color, 1);
+    float atten = max(0, dot(N, L)) * 0.5 + 0.5;
+    vec3 color = texture(uMaterial.albedo, i.uv).rgb * atten;
+    oFragColor = vec4(color, texture(uMaterial.albedo, i.uv).a);
 })";
 
 static void APIENTRY opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
@@ -72,6 +73,8 @@ bool renderer_init() {
     glDebugMessageCallback(opengl_debug_callback, nullptr);
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // init shaders
     material_shader = shader_create(material_vertex_src, material_fragment_src);
@@ -93,26 +96,18 @@ void renderer_queue_renderable(Renderable renderable) {
     }
 
 #if RENDERER_DEBUG_CHECKING_ENABLED
-    if (renderable.material == nullptr || renderable.mesh == nullptr) {
-        fprintf(stderr, "[error] tried to queue invalid renderable:\n"
-                        "Renderable {\n"
-                        "  .mesh     = %p\n"
-                        "  .material = %p\n"
-                        "}\n",
-                renderable.mesh, renderable.material);
+    if (renderable.model == nullptr) {
+        fprintf(stderr, "[error] tried to queue renderable with null model\n");
         return;
     }
 
-    if (renderable.mesh->vertices == nullptr || renderable.mesh->num_vertices == 0
-        || renderable.mesh->vao == 0 || renderable.mesh->vbo == 0) {
-        fprintf(stderr, "[error] tried to queue renderable with invalid mesh:\n"
-                        "Mesh {\n"
-                        "  .vertices     = %p\n"
-                        "  .num_vertices = %u\n"
-                        "  .vao          = %u\n"
-                        "  .vbo          = %u\n"
+    if (renderable.model->meshes == nullptr || renderable.model->materials == 0) {
+        fprintf(stderr, "[error] tried to queue renderable with invalid model:\n"
+                        "Model {\n"
+                        "  .meshes     = %p\n"
+                        "  .materials  = %p\n"
                         "}\n",
-                renderable.mesh->vertices, renderable.mesh->num_vertices, renderable.mesh->vao, renderable.mesh->vbo);
+                renderable.model->meshes, renderable.model->materials);
         return;
     }
 #endif
@@ -134,7 +129,7 @@ void renderer_draw(GameState *game_state) {
     // camera
     f32 aspect_ratio = (f32)game_state->render_options.width / game_state->render_options.height;
     glm::mat4 view_matrix = glm::lookAt(game_state->camera.position, game_state->camera.look_at, glm::vec3(0, 1, 0));
-    glm::mat4 projection_matrix = glm::perspective(game_state->camera.fov_radians, aspect_ratio, 0.001f, 100.0f);
+    glm::mat4 projection_matrix = glm::perspective(game_state->camera.fov_radians, aspect_ratio, 0.001f, 1000.0f);
     glm::mat4 view_projection_matrix = projection_matrix * view_matrix;
     shader_set_mat4(material_shader, "uViewProjectionMatrix", view_projection_matrix);
 
@@ -145,10 +140,19 @@ void renderer_draw(GameState *game_state) {
         glm::mat4 model_matrix = transform_to_matrix(&current->transform);
         shader_set_mat4(material_shader, "uModelMatrix", model_matrix);
         shader_set_mat4(material_shader, "uNormalMatrix", glm::transpose(glm::inverse(model_matrix)));
-        shader_set_vec3(material_shader, "uMaterial.color", current->material->color);
 
-        glBindVertexArray(current->mesh->vao);
-        glDrawArrays(GL_TRIANGLES, 0, current->mesh->num_vertices);
+        // render each mesh in model
+        for (u32 m = 0; m < current->model->num_meshes; ++m) {
+            Material *material = &current->model->materials[m];
+            Mesh *mesh = &current->model->meshes[m];
+
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, material->albedo_texture);
+            shader_set_int(material_shader, "uMaterial.albedo", 0);
+
+            glBindVertexArray(mesh->vao);
+            glDrawArrays(GL_TRIANGLES, 0, mesh->num_vertices);
+        }
     }
 
     // reset queued renderables

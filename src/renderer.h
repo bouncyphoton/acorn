@@ -1,7 +1,7 @@
 #ifndef ACORN_RENDERER_H
 #define ACORN_RENDERER_H
 
-#include "graphics_util.h"
+#include "renderable.h"
 #include "game_state.h"
 
 bool renderer_init();

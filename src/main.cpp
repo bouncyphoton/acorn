@@ -1,37 +1,24 @@
 #include "window.h"
 #include "renderer.h"
 #include "game_state.h"
+#include "model.h"
 #include <GLFW/glfw3.h>
 #include <cstdio>
 
-#define NUM_MESHES 2
-#define NUM_MATERIALS 1
-// TODO: move meshes and materials data, preferably to a memory arena
-static Mesh meshes[NUM_MESHES] = {};
-static Material materials[NUM_MATERIALS] = {};
+#define NUM_MODELS 1
+// TODO: move data, preferably to a memory arena
+static Model models[NUM_MODELS] = {};
 
 static bool assets_load() {
-    // load mesh
-    meshes[0] = mesh_load("../assets/naturePack_130.obj", "../assets/");
-    meshes[1] = mesh_load("../assets/naturePack_001.obj", "../assets/");
-
-    // load material
-    materials[0].color = glm::vec3(1);
-
-    // check that assets loaded correctly
-    for (u32 i = 0; i < NUM_MESHES; ++i) {
-        Mesh *mesh = &meshes[i];
-        if (mesh->vertices == nullptr || mesh->vao == 0 || mesh->vbo == 0) {
-            return false;
-        }
-    }
+    // load models
+    models[0] = model_load("../assets/sponza/sponza.obj", "../assets/sponza");
 
     return true;
 }
 
 static void assets_unload() {
-    for (u32 i = 0; i < NUM_MESHES; ++i) {
-        mesh_free(&meshes[i]);
+    for (u32 i = 0; i < NUM_MODELS; ++i) {
+        model_free(&models[i]);
     }
 }
 
@@ -70,25 +57,17 @@ static void acorn_run() {
 
         // TODO: remove temporary update
         {
-            game_state.camera.look_at = (meshes[0].min + meshes[0].max) / 2.0f;
-            game_state.camera.position =
-                    glm::vec3(cos(glfwGetTime()), 0, sin(glfwGetTime())) * 5.0f
-                    + game_state.camera.look_at;
+            game_state.camera.position = glm::vec3(cos(glfwGetTime() * 0.5f) * 5, 7, -4);
+            game_state.camera.look_at = game_state.camera.position + glm::vec3(-sin(glfwGetTime() * 0.5f), -1.5, 4);
 
-            // tree
-            renderer_queue_renderable(Renderable{
-                    Transform{},
-                    &meshes[0],
-                    &materials[0]
-            });
-
-            // ground
+            // sponza
             renderer_queue_renderable(Renderable{
                     Transform{
-                            glm::vec3(0, -meshes[1].max.y, 0)
+                            glm::vec3(0),
+                            glm::identity<glm::quat>(),
+                            glm::vec3(0.01f)
                     },
-                    &meshes[1],
-                    &materials[0]
+                    &models[0]
             });
         }
 
