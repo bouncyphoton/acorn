@@ -9,4 +9,4 @@ d 1.000000
 illum 2
 map_Bump textures/PavingStones045_2K_Normal.jpg
 map_Kd textures/PavingStones045_2K_Color.jpg
-map_Ns textures/PavingStones045_2K_Roughness.jpg
+map_Pr textures/PavingStones045_2K_Roughness.jpg
