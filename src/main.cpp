@@ -7,14 +7,15 @@
 #include <cstdio>
 #include <chrono>
 
-#define NUM_MODELS 2
+#define NUM_MODELS 1
 // TODO: move data, preferably to a memory arena
 static Model models[NUM_MODELS] = {};
 
+// TODO: stop hardcoding assets directory
+
 static bool assets_load() {
     // load models
-    models[0] = model_load("../assets/sponza/sponza.obj", "../assets/sponza");
-    models[1] = model_load("../assets/PavingStones045/PavingStones045.obj", "../assets/PavingStones045");
+    models[0] = model_load("../assets/stylized-rifle/Stylized_rifle_final.obj", "../assets/stylized-rifle");
 
     return true;
 }
@@ -61,41 +62,43 @@ static void acorn_run() {
     while (!window_should_close()) {
         auto now = std::chrono::system_clock::now();
         f32 ms_since_last_frame = std::chrono::duration_cast<std::chrono::microseconds>(now - last).count() / 1000.0f;
+        RenderStats stats = renderer_get_stats();
         printf("frame took %.2fms (%d fps)\n", ms_since_last_frame, (int) (1000.0f / ms_since_last_frame));
+        printf("render stats:\nverts: %d\ncalls: %d\n\n", stats.vertices_rendered, stats.draw_calls);
         last = now;
 
         window_update();
 
         // TODO: remove temporary update
         {
-            float t = glfwGetTime() * 0.5f;
-            game_state.camera.position = glm::vec3(cos(t) * 5, 7, -4);
-            game_state.camera.look_at = game_state.camera.position + glm::vec3(-sin(t), -1.5, 4);
+            f32 t = glfwGetTime() * 0.5f;
+            game_state.camera.position = glm::vec3(cos(t) * 2, 0.5, sin(t) * 2);
+            game_state.camera.look_at = glm::vec3(0, 0, 0);
 
-            // sponza
+            // stylized gun
+            Model *gun_model = &models[0];
+
             renderer_queue_renderable(Renderable{
                     Transform{
-                            glm::vec3(0),
+                            glm::vec3(0, 0, -0.5f),
                             glm::identity<glm::quat>(),
-                            glm::vec3(0.01f)
+                            glm::vec3(0.05f)
                     },
-                    &models[0]
+                    gun_model
             });
 
-            // paving stones
             renderer_queue_renderable(Renderable{
                     Transform{
-                            glm::vec3(0, 5.5, 0),
+                            glm::vec3(0, 0, 0.5f),
+                            glm::quat(glm::vec3(0, glm::pi<f32>(), 0)),
+                            glm::vec3(0.05f)
                     },
-                    &models[1]
+                    gun_model
             });
         }
 
         // draw frame
         renderer_draw(&game_state);
-
-        RenderStats stats = renderer_get_stats();
-        printf("render stats:\nverts: %d\ncalls: %d\n\n", stats.vertices_rendered, stats.draw_calls);
 
         window_swap_buffers();
     }

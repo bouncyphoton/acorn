@@ -1,6 +1,7 @@
 #include "renderer.h"
 #include "types.h"
 #include "shader.h"
+#include "utils.h"
 #include <GL/gl3w.h>
 #include <cstdio>
 
@@ -16,60 +17,6 @@ static u32 material_shader = 0;
 
 // render stats
 static RenderStats render_stats = {};
-
-// TODO: don't hardcode shader sources
-const char *material_vertex_src = R"(#version 330 core
-layout (location = 0) in vec3 aPosition;
-layout (location = 1) in vec3 aNormal;
-layout (location = 2) in vec2 aUv;
-layout (location = 3) in vec3 aTangent;
-layout (location = 4) in vec3 aBiTangent;
-
-out VertexData {
-    vec3 normal;
-    vec2 uv;
-    mat3 tbn;
-} o;
-
-uniform mat4 uViewProjectionMatrix;
-uniform mat4 uModelMatrix;
-uniform mat4 uNormalMatrix;
-
-void main() {
-    gl_Position = uViewProjectionMatrix * uModelMatrix * vec4(aPosition, 1);
-    o.normal = vec3(uNormalMatrix * vec4(aNormal, 1));
-    o.uv = aUv;
-
-    vec3 t = normalize(vec3(uModelMatrix * vec4(aTangent, 0)));
-    vec3 b = normalize(vec3(uModelMatrix * vec4(aBiTangent, 0)));
-    vec3 n = normalize(vec3(uModelMatrix * vec4(aNormal, 0)));
-    o.tbn = mat3(t, b, n);
-
-})";
-const char *material_fragment_src = R"(#version 330 core
-layout (location = 0) out vec4 oFragColor;
-
-in VertexData {
-    vec3 normal;
-    vec2 uv;
-    mat3 tbn;
-} i;
-
-uniform struct {
-    sampler2D albedo;
-    sampler2D normal;
-} uMaterial;
-
-uniform vec3 uSunDirection;
-
-void main() {
-    vec3 N = normalize(i.tbn * (texture(uMaterial.normal, i.uv).rgb * 2 - 1));
-    vec3 L = uSunDirection;
-
-    float atten = max(0, dot(N, L)) * 0.5 + 0.5;
-    vec3 color = texture(uMaterial.albedo, i.uv).rgb * atten;
-    oFragColor = vec4(color, texture(uMaterial.albedo, i.uv).a);
-})";
 
 static void APIENTRY opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
                                            const GLchar *message, const void *user_param) {
@@ -91,7 +38,12 @@ bool renderer_init() {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // init shaders
-    material_shader = shader_create(material_vertex_src, material_fragment_src);
+    char *material_vert = load_file_as_string("../assets/shaders/material.vert");
+    char *material_frag = load_file_as_string("../assets/shaders/material.frag");
+    material_shader = shader_create(material_vert, material_frag);
+    free(material_vert);
+    free(material_frag);
+
     if (material_shader == 0) {
         return false;
     }
@@ -148,6 +100,7 @@ void renderer_draw(GameState *game_state) {
     glm::mat4 projection_matrix = glm::perspective(game_state->camera.fov_radians, aspect_ratio, 0.001f, 1000.0f);
     glm::mat4 view_projection_matrix = projection_matrix * view_matrix;
     shader_set_mat4(material_shader, "uViewProjectionMatrix", view_projection_matrix);
+    shader_set_vec3(material_shader, "uCameraPosition", game_state->camera.position);
 
     // render renderables
     for (u32 i = 0; i < num_renderables_queued; ++i) {
@@ -169,6 +122,14 @@ void renderer_draw(GameState *game_state) {
             glActiveTexture(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_2D, material->normal_texture);
             shader_set_int(material_shader, "uMaterial.normal", 1);
+
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, material->metallic_texture);
+            shader_set_int(material_shader, "uMaterial.metallic", 2);
+
+            glActiveTexture(GL_TEXTURE3);
+            glBindTexture(GL_TEXTURE_2D, material->roughness_texture);
+            shader_set_int(material_shader, "uMaterial.roughness", 3);
 
             glBindVertexArray(mesh->vao);
             glDrawArrays(GL_TRIANGLES, 0, mesh->num_vertices);

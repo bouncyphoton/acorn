@@ -69,6 +69,7 @@ u32 texture_get(const char *path, BuiltInTextureEnum default_tex) {
         return texture_get_built_in(default_tex);
     }
 
+    // TODO: don't make everything RGBA
     // generate opengl texture and cache
     u32 texture = texture_generate(width, height, data, GL_RGBA, GL_RGBA);
     texture_map.emplace(path, texture);

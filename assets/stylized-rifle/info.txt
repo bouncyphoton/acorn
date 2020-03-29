@@ -1,0 +1,5 @@
+'Stylized Rifle' model by dmitrynerovny: https://skfb.ly/6QTZB
+
+modifications:
+- changed file structure
+- added mtl file

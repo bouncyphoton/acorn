@@ -51,15 +51,25 @@ Model model_load(const char *obj_path, const char *mtl_dir) {
         if (!materials.empty()) {
             std::string dir = std::string(mtl_dir) + "/";
 
+            // albedo
             std::string albedo_path = dir + materials[i].diffuse_texname;
             model.materials[i].albedo_texture = texture_get(albedo_path.c_str());
 
+            // normal
             std::string normal_path = dir + materials[i].normal_texname;
             if (materials[i].normal_texname.empty()) {
                 // if no normal in mtl, use bump
                 normal_path += materials[i].bump_texname;
             }
             model.materials[i].normal_texture = texture_get(normal_path.c_str(), BuiltInTextureEnum::NORMAL);
+
+            // metallic
+            std::string metallic_path = dir + materials[i].metallic_texname;
+            model.materials[i].metallic_texture = texture_get(metallic_path.c_str(), BuiltInTextureEnum::BLACK);
+
+            // roughness
+            std::string roughness_path = dir + materials[i].roughness_texname;
+            model.materials[i].roughness_texture = texture_get(roughness_path.c_str(), BuiltInTextureEnum::WHITE);
         }
     }
 

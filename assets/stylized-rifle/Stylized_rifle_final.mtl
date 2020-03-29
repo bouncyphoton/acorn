@@ -1,0 +1,6 @@
+newmtl lambert2SG
+illum 2
+map_Kd textures/lambert2SG_albedo.jpg
+norm textures/lambert2SG_normal.png
+map_Pm textures/lambert2SG_metallic.jpg
+map_Pr textures/lambert2SG_roughness.jpg
