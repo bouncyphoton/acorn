@@ -13,43 +13,55 @@ static u32 texture_white = 0;
 static u32 texture_missing = 0;
 static u32 texture_normal = 0;
 
-static u32 texture_generate(s32 width, s32 height, u8 *data, GLenum internal_format, GLenum format) {
+u32 texture_create(GLenum texture_format, s32 width, s32 height, u8 *data, GLenum data_format) {
+    s32 previously_bound;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &previously_bound);
+
     u32 texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, texture_format, width, height, 0, data_format, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glBindTexture(GL_TEXTURE_2D, previously_bound);
     return texture;
+}
+
+u32 texture_create(GLenum texture_format, u32 width, u32 height) {
+    return texture_create(texture_format, width, height, nullptr, texture_format);
+}
+
+void texture_destroy(u32 texture) {
+    glDeleteTextures(1, &texture);
 }
 
 bool textures_init() {
     stbi_set_flip_vertically_on_load(1);
 
     u8 black[4] = {0, 0, 0, 255};
-    texture_black = texture_generate(1, 1, black, GL_RGBA, GL_RGBA);
+    texture_black = texture_create(GL_RGBA, 1, 1, black, GL_RGBA);
 
     u8 white[4] = {0, 0, 0, 255};
-    texture_white = texture_generate(1, 1, white, GL_RGBA, GL_RGBA);
+    texture_white = texture_create(GL_RGBA, 1, 1, white, GL_RGBA);
 
     u8 missing[4 * 4] = {255, 0, 255, 255,
                          0, 0, 0, 255,
                          255, 0, 255, 255,
                          0, 0, 0, 255};
-    texture_missing = texture_generate(2, 2, missing, GL_RGBA, GL_RGBA);
+    texture_missing = texture_create(GL_RGBA, 2, 2, missing, GL_RGBA);
 
     u8 normal[4] = {127, 127, 255, 255};
-    texture_normal = texture_generate(1, 1, normal, GL_RGBA, GL_RGBA);
+    texture_normal = texture_create(GL_RGBA, 1, 1, normal, GL_RGBA);
 
     return texture_black != 0 && texture_white != 0 && texture_missing != 0 && texture_normal != 0;
 }
 
 void textures_shutdown() {
-    glDeleteTextures(1, &texture_black);
-    glDeleteTextures(1, &texture_white);
-    glDeleteTextures(1, &texture_missing);
-    for (auto& t : texture_map) {
-        glDeleteTextures(1, &t.second);
+    texture_destroy(texture_black);
+    texture_destroy(texture_white);
+    texture_destroy(texture_missing);
+    for (auto &t : texture_map) {
+        texture_destroy(t.second);
     }
 }
 
@@ -71,7 +83,7 @@ u32 texture_get(const char *path, BuiltInTextureEnum default_tex) {
 
     // TODO: don't make everything RGBA
     // generate opengl texture and cache
-    u32 texture = texture_generate(width, height, data, GL_RGBA, GL_RGBA);
+    u32 texture = texture_create(GL_RGBA, width, height, data, GL_RGBA);
     texture_map.emplace(path, texture);
 
     // free image data
@@ -89,7 +101,7 @@ u32 texture_get_built_in(BuiltInTextureEnum texture) {
         case BuiltInTextureEnum::NORMAL:
             return texture_normal;
         default:
-            fprintf(stderr, "[error] failed to get built in texture %d\n", (int)texture);
+            fprintf(stderr, "[error] failed to get built in texture %d\n", (int) texture);
         case BuiltInTextureEnum::MISSING:
             return texture_missing;
     }
