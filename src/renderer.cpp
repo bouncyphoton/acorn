@@ -43,6 +43,9 @@ bool renderer_init(RenderOptions render_options) {
 
     // init fbos
     default_fbo = framebuffer_create(GL_RGBA, render_options.width, render_options.height);
+    if (default_fbo.id == 0) {
+        return false;
+    }
 
     // init shaders
     char *material_vert = load_file_as_string("../assets/shaders/material.vert");
