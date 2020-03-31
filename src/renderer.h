@@ -9,7 +9,7 @@ struct RenderStats {
     u32 draw_calls = 0;
 };
 
-bool renderer_init();
+bool renderer_init(RenderOptions render_options);
 
 void renderer_shutdown();
 

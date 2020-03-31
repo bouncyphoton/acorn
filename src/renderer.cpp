@@ -1,5 +1,6 @@
 #include "renderer.h"
 #include "types.h"
+#include "framebuffer.h"
 #include "shader.h"
 #include "utils.h"
 #include <GL/gl3w.h>
@@ -11,6 +12,9 @@
 // renderable queuing
 static u32 num_renderables_queued = 0;
 static Renderable renderables[MAX_RENDERABLES_PER_FRAME] = {};
+
+// framebuffers
+static Framebuffer default_fbo = {};
 
 // shaders
 static u32 material_shader = 0;
@@ -27,7 +31,7 @@ static void APIENTRY opengl_debug_callback(GLenum source, GLenum type, GLuint id
     }
 }
 
-bool renderer_init() {
+bool renderer_init(RenderOptions render_options) {
     // NOTE: debug output is not a part of core opengl until 4.3, but it's ok
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -36,6 +40,9 @@ bool renderer_init() {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // init fbos
+    default_fbo = framebuffer_create(GL_RGBA, render_options.width, render_options.height);
 
     // init shaders
     char *material_vert = load_file_as_string("../assets/shaders/material.vert");
@@ -53,6 +60,7 @@ bool renderer_init() {
 
 void renderer_shutdown() {
     shader_destroy(material_shader);
+    framebuffer_destroy(&default_fbo);
 }
 
 void renderer_queue_renderable(Renderable renderable) {
@@ -85,6 +93,9 @@ void renderer_queue_renderable(Renderable renderable) {
 
 void renderer_draw(GameState *game_state) {
     render_stats = {};
+
+    // bind default fbo
+    framebuffer_bind(&default_fbo);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -141,6 +152,9 @@ void renderer_draw(GameState *game_state) {
 
     // reset queued renderables
     num_renderables_queued = 0;
+
+    // blit to default framebuffer
+    framebuffer_blit_to_default_framebuffer(&default_fbo, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 }
 
 RenderStats renderer_get_stats() {

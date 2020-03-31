@@ -39,7 +39,7 @@ static bool acorn_init() {
     game_state.sun_direction = glm::normalize(glm::vec3(-1, 1, 1));
 
     if (!window_init(game_state.render_options, window_title)) return false;
-    if (!renderer_init()) return false;
+    if (!renderer_init(game_state.render_options)) return false;
     if (!textures_init()) return false;
     if (!assets_load()) return false;
 
