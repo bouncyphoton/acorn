@@ -87,6 +87,8 @@ vec3 calculate_brdf(vec3 albedo, vec3 N, vec3 V, float metallic, float roughness
 }
 
 void main() {
+    if (texture(uMaterial.albedo, i.uv).a == 0) discard;
+
     vec3 albedo = pow(texture(uMaterial.albedo, i.uv).rgb, vec3(2.2));
     vec3 normal = normalize(i.tbn * (texture(uMaterial.normal, i.uv).rgb * 2 - 1));
     vec3 view_dir = normalize(uCameraPosition - i.position);
