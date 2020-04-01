@@ -4,6 +4,7 @@
 #include "shader.h"
 #include "utils.h"
 #include "texture.h"
+#include <stb_image.h>
 #include <GL/gl3w.h>
 #include <cstdio>
 
@@ -14,11 +15,19 @@
 static u32 num_renderables_queued = 0;
 static Renderable renderables[MAX_RENDERABLES_PER_FRAME] = {};
 
+// textures
+static u32 skybox_texture = 0;
+
 // framebuffers
 static Framebuffer default_fbo = {};
+static Framebuffer diffuse_irradiance_fbo = {};
 
 // shaders
 static u32 material_shader = 0;
+static u32 sky_shader = 0;
+
+// dummy vao
+static u32 dummy_vao = 0;
 
 // render stats
 static RenderStats render_stats = {};
@@ -41,11 +50,37 @@ bool renderer_init(RenderOptions render_options) {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
+    // TODO: don't hardcode skybox textures into renderer
+
+    // init textures
+    s32 w, h;
+    void *data[6] = {
+            stbi_loadf("../assets/env/px.hdr", &w, &h, nullptr, 3),
+            stbi_loadf("../assets/env/nx.hdr", &w, &h, nullptr, 3),
+            stbi_loadf("../assets/env/py.hdr", &w, &h, nullptr, 3),
+            stbi_loadf("../assets/env/ny.hdr", &w, &h, nullptr, 3),
+            stbi_loadf("../assets/env/pz.hdr", &w, &h, nullptr, 3),
+            stbi_loadf("../assets/env/nz.hdr", &w, &h, nullptr, 3)
+    };
+    skybox_texture = texture_cubemap_create(GL_RGB16F, w, h, GL_FLOAT, data, GL_RGB);
+    for (int i = 0; i < 6; ++i) {
+        free(data[i]);
+    }
 
     // init fbos
-    u32 texture = texture_create(GL_RGBA, render_options.width, render_options.height);
-    default_fbo = framebuffer_create(texture);
+    default_fbo = framebuffer_create(
+            texture_2d_create(GL_RGB16F, render_options.width, render_options.height, GL_FLOAT, nullptr, GL_RGB), true
+    );
     if (default_fbo.id == 0) {
+        return false;
+    }
+
+    diffuse_irradiance_fbo = framebuffer_create(
+            texture_cubemap_create(GL_RGB16F, w, h, GL_FLOAT, nullptr, GL_RGB), false
+    );
+    if (diffuse_irradiance_fbo.id == 0) {
         return false;
     }
 
@@ -60,6 +95,22 @@ bool renderer_init(RenderOptions render_options) {
         return false;
     }
 
+    char *sky_vert = load_file_as_string("../assets/shaders/sky.vert");
+    char *sky_frag = load_file_as_string("../assets/shaders/sky.frag");
+    sky_shader = shader_create(sky_vert, sky_frag);
+    free(sky_vert);
+    free(sky_frag);
+
+    if (sky_shader == 0) {
+        return false;
+    }
+
+    glGenVertexArrays(1, &dummy_vao);
+    if (dummy_vao == 0) {
+        fprintf(stderr, "[error] failed to generate dummy vao\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -70,7 +121,8 @@ void renderer_shutdown() {
 
 void renderer_queue_renderable(Renderable renderable) {
     if (num_renderables_queued >= MAX_RENDERABLES_PER_FRAME) {
-        fprintf(stderr, "[warn] tried to queue more renderables than MAX_RENDERABLES (%d)\n", MAX_RENDERABLES_PER_FRAME);
+        fprintf(stderr, "[warn] tried to queue more renderables than MAX_RENDERABLES (%d)\n",
+                MAX_RENDERABLES_PER_FRAME);
         return;
     }
 
@@ -96,24 +148,29 @@ void renderer_queue_renderable(Renderable renderable) {
     ++num_renderables_queued;
 }
 
-void renderer_draw(GameState *game_state) {
+static void renderer_draw_scene(GameState *game_state) {
     render_stats = {};
-
-    // bind default fbo
-    framebuffer_bind(&default_fbo);
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // TODO: optimize by removing redundant binds and uniform setting
     shader_bind(material_shader);
 
     u32 texture_idx = 0;
 
+    // TODO: diffuse irradiance map generation
+    // TODO: prefiltered environment map generation
+    // TODO: prefilter mipmap resolution in fragment shader
+    // TODO: brdf lut generation
+
+    glActiveTexture(GL_TEXTURE0 + texture_idx);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, diffuse_irradiance_fbo.texture);
+    shader_set_int(material_shader, "uDiffuseIrradianceMap", texture_idx);
+    ++texture_idx;
+
     // sun
     shader_set_vec3(material_shader, "uSunDirection", game_state->sun_direction);
 
     // camera
-    f32 aspect_ratio = (f32)game_state->render_options.width / game_state->render_options.height;
+    f32 aspect_ratio = (f32) game_state->render_options.width / game_state->render_options.height;
     glm::mat4 view_matrix = glm::lookAt(game_state->camera.position, game_state->camera.look_at, glm::vec3(0, 1, 0));
     glm::mat4 projection_matrix = glm::perspective(game_state->camera.fov_radians, aspect_ratio, 0.001f, 1000.0f);
     glm::mat4 view_projection_matrix = projection_matrix * view_matrix;
@@ -163,6 +220,46 @@ void renderer_draw(GameState *game_state) {
 
     // reset queued renderables
     num_renderables_queued = 0;
+}
+
+static void renderer_draw_sky(GameState *game_state) {
+    glDepthFunc(GL_LEQUAL);
+    glDepthMask(GL_FALSE);
+
+    shader_bind(sky_shader);
+
+    f32 aspect_ratio = game_state->render_options.width / (f32)game_state->render_options.height;
+
+    shader_set_mat4(sky_shader, "uViewProjectionMatrix",
+                    glm::perspective(game_state->camera.fov_radians, aspect_ratio, 0.01f, 10.0f) *
+                    glm::lookAt(glm::vec3(0), game_state->camera.look_at - game_state->camera.position,
+                                glm::vec3(0, 1, 0)));
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_texture);
+    shader_set_int(sky_shader, "uSkybox", 0);
+
+    glBindVertexArray(dummy_vao);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 14);
+    glBindVertexArray(0);
+
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LESS);
+}
+
+void renderer_draw(GameState *game_state) {
+    // bind default fbo
+    framebuffer_bind(&default_fbo);
+    s32 width, height;
+    texture_2d_get_dimensions(default_fbo.texture, 0, &width, &height);
+    glViewport(0, 0, width, height);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // draw scene
+    renderer_draw_scene(game_state);
+
+    // draw sky
+    renderer_draw_sky(game_state);
 
     // blit to default framebuffer
     framebuffer_blit_to_default_framebuffer(&default_fbo, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
