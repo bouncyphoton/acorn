@@ -22,4 +22,6 @@ u32 texture_get(const char *path, BuiltInTextureEnum default_tex = BuiltInTextur
 
 u32 texture_get_built_in(BuiltInTextureEnum texture);
 
+void texture_get_dimensions(u32 texture, u32 miplevel, s32 *width, s32 *height);
+
 #endif //ACORN_TEXTURE_H

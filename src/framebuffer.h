@@ -6,13 +6,11 @@
 
 struct Framebuffer {
     u32 id = 0;
-    u32 width = 0;
-    u32 height = 0;
     u32 texture = 0;
     u32 depth_renderbuffer = 0;
 };
 
-Framebuffer framebuffer_create(GLenum texture_format, u32 width, u32 height);
+Framebuffer framebuffer_create(u32 texture);
 
 void framebuffer_destroy(Framebuffer *fbo);
 

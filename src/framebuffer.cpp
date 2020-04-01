@@ -2,10 +2,9 @@
 #include "texture.h"
 #include <cstdio>
 
-Framebuffer framebuffer_create(GLenum texture_format, u32 width, u32 height) {
+Framebuffer framebuffer_create(u32 texture) {
     Framebuffer fbo = {};
-    fbo.width = width;
-    fbo.height = height;
+    fbo.texture = texture;
 
     s32 previously_bound;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &previously_bound);
@@ -15,8 +14,10 @@ Framebuffer framebuffer_create(GLenum texture_format, u32 width, u32 height) {
     glBindFramebuffer(GL_FRAMEBUFFER, fbo.id);
 
     // set texture
-    fbo.texture = texture_create(texture_format, width, height);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbo.texture, 0);
+
+    s32 width, height;
+    texture_get_dimensions(fbo.texture, 0, &width, &height);
 
     // depth renderbuffer
     glGenRenderbuffers(1, &fbo.depth_renderbuffer);
@@ -43,14 +44,21 @@ void framebuffer_destroy(Framebuffer *fbo) {
 
 void framebuffer_bind(Framebuffer *fbo) {
     glBindFramebuffer(GL_FRAMEBUFFER, fbo->id);
-    glViewport(0, 0, fbo->width, fbo->height);
+
+    s32 width, height;
+    texture_get_dimensions(fbo->texture, 0, &width, &height);
+
+    glViewport(0, 0, width, height);
 }
 
 void framebuffer_blit_to_default_framebuffer(Framebuffer *fbo, u32 mask, u32 filter) {
     GLint dims[4] = {0};
     glGetIntegerv(GL_VIEWPORT, dims);
 
+    s32 width, height;
+    texture_get_dimensions(fbo->texture, 0, &width, &height);
+
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo->id);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBlitFramebuffer(0, 0, fbo->width, fbo->height, dims[0], dims[1], dims[2], dims[3], mask, filter);
+    glBlitFramebuffer(0, 0, width, height, dims[0], dims[1], dims[2], dims[3], mask, filter);
 }

@@ -3,6 +3,7 @@
 #include "framebuffer.h"
 #include "shader.h"
 #include "utils.h"
+#include "texture.h"
 #include <GL/gl3w.h>
 #include <cstdio>
 
@@ -42,7 +43,8 @@ bool renderer_init(RenderOptions render_options) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // init fbos
-    default_fbo = framebuffer_create(GL_RGBA, render_options.width, render_options.height);
+    u32 texture = texture_create(GL_RGBA, render_options.width, render_options.height);
+    default_fbo = framebuffer_create(texture);
     if (default_fbo.id == 0) {
         return false;
     }
@@ -105,6 +107,8 @@ void renderer_draw(GameState *game_state) {
     // TODO: optimize by removing redundant binds and uniform setting
     shader_bind(material_shader);
 
+    u32 texture_idx = 0;
+
     // sun
     shader_set_vec3(material_shader, "uSunDirection", game_state->sun_direction);
 
@@ -129,21 +133,25 @@ void renderer_draw(GameState *game_state) {
             Material *material = &current->model->materials[m];
             Mesh *mesh = &current->model->meshes[m];
 
-            glActiveTexture(GL_TEXTURE0);
+            glActiveTexture(GL_TEXTURE0 + texture_idx);
             glBindTexture(GL_TEXTURE_2D, material->albedo_texture);
-            shader_set_int(material_shader, "uMaterial.albedo", 0);
+            shader_set_int(material_shader, "uMaterial.albedo", texture_idx);
+            ++texture_idx;
 
-            glActiveTexture(GL_TEXTURE1);
+            glActiveTexture(GL_TEXTURE0 + texture_idx);
             glBindTexture(GL_TEXTURE_2D, material->normal_texture);
-            shader_set_int(material_shader, "uMaterial.normal", 1);
+            shader_set_int(material_shader, "uMaterial.normal", texture_idx);
+            ++texture_idx;
 
-            glActiveTexture(GL_TEXTURE2);
+            glActiveTexture(GL_TEXTURE0 + texture_idx);
             glBindTexture(GL_TEXTURE_2D, material->metallic_texture);
-            shader_set_int(material_shader, "uMaterial.metallic", 2);
+            shader_set_int(material_shader, "uMaterial.metallic", texture_idx);
+            ++texture_idx;
 
-            glActiveTexture(GL_TEXTURE3);
+            glActiveTexture(GL_TEXTURE0 + texture_idx);
             glBindTexture(GL_TEXTURE_2D, material->roughness_texture);
-            shader_set_int(material_shader, "uMaterial.roughness", 3);
+            shader_set_int(material_shader, "uMaterial.roughness", texture_idx);
+            ++texture_idx;
 
             glBindVertexArray(mesh->vao);
             glDrawArrays(GL_TRIANGLES, 0, mesh->num_vertices);

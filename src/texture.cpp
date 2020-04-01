@@ -106,3 +106,19 @@ u32 texture_get_built_in(BuiltInTextureEnum texture) {
             return texture_missing;
     }
 }
+
+// TODO: check performance
+void texture_get_dimensions(u32 texture, u32 miplevel, s32 *width, s32 *height) {
+    if (texture == 0 || width == nullptr || height == nullptr) {
+        return;
+    }
+
+    s32 previously_bound;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &previously_bound);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, miplevel, GL_TEXTURE_WIDTH, width);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, miplevel, GL_TEXTURE_HEIGHT, height);
+
+    glBindTexture(GL_TEXTURE_2D, previously_bound);
+}
