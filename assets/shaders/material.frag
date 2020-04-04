@@ -17,8 +17,21 @@ uniform struct {
     sampler2D roughness;
 } uMaterial;
 
+uniform samplerCube uDiffuseIrradianceMap;
+uniform samplerCube uPrefilteredEnvironmentMap;
+uniform sampler2D uBrdfLut;
+
 uniform vec3 uSunDirection;
 uniform vec3 uCameraPosition;
+
+const vec2 inv_atan = vec2(1.0 / (2 * PI), 1.0 / PI);
+vec2 sample_equirectangular_map(vec3 v) {
+    // convert from cartesian to polar to uv
+    vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
+    uv *= inv_atan;
+    uv += 0.5;
+    return vec2(uv.x, 1.0 - uv.y);
+}
 
 float ggx_distribution(vec3 N, vec3 H, float roughness) {
     float a = roughness*roughness;
@@ -37,7 +50,7 @@ vec3 fresnel_schlick(float cos_theta, vec3 F0) {
     return F0 + (1.0 - F0) * pow(1.0 - cos_theta, 5.0);
 }
 
-vec3 fresnel_schlickRoughness(float cosTheta, vec3 F0, float roughness) {
+vec3 fresnel_schlick_roughness(float cosTheta, vec3 F0, float roughness) {
     return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
@@ -64,26 +77,35 @@ float geometry_smith(vec3 N, vec3 V, vec3 L, float roughness) {
 // calculate brdf with cook-torrance for specular and lambert for diffuse
 //---------------
 vec3 calculate_brdf(vec3 albedo, vec3 N, vec3 V, float metallic, float roughness) {
-    vec3 Wo = V; // outgoing light direction
-    vec3 Wi = uSunDirection; // incoming light direction
-    vec3 H = normalize(V + Wi); // halfway vector
-    vec3 F0 = mix(vec3(0.04), albedo, metallic); // material response at normal incidence
+    vec3 Wo = V;// outgoing light direction
+    vec3 Wi = uSunDirection;// incoming light direction
+    vec3 H = normalize(V + Wi);// halfway vector
+    vec3 F0 = mix(vec3(0.04), albedo, metallic);// material response at normal incidence
 
-    float D = ggx_distribution(N, H, roughness); // distribution
-    vec3  F = fresnel_schlick(max(dot(H, Wo), 0), F0); // fresnel
-    float G = geometry_smith(N, Wo, Wi, roughness); // geometry
+    float D = ggx_distribution(N, H, roughness);// distribution
+    vec3  F = fresnel_schlick(max(dot(H, Wo), 0), F0);// fresnel
+    float G = geometry_smith(N, Wo, Wi, roughness);// geometry
 
     vec3 specular = (D * F * G) / (4 * max(0, dot(Wo, N)) * max(0, dot(Wi, N)) + 0.001);
 
-    // TODO: proper Ks
-    vec3 Ks = F; // amount of specularly reflected light
+    vec3 Ks = F;// amount of specularly reflected light
 
-    vec3 Kd = (1 - Ks) * (1 - metallic); // amount of diffused incoming radiance
+    vec3 Kd = (1 - Ks) * (1 - metallic);// amount of diffused incoming radiance
 
-    // TODO: proper Li
     vec3 Li = vec3(1);
 
-    return (Kd * albedo / PI + /*Ks **/ specular) * Li * max(0, dot(N, Wi));
+    return (Kd * albedo / PI + specular) * Li * max(0, dot(N, Wi));
+}
+
+vec3 tonemap(vec3 x) {
+    x = pow(x, vec3(1/2.2));
+
+    const float a = 2.51;
+    const float b = 0.03;
+    const float c = 2.43;
+    const float d = 0.59;
+    const float e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
 }
 
 void main() {
@@ -95,7 +117,30 @@ void main() {
     float metallic = texture(uMaterial.metallic, i.uv).r;
     float roughness = texture(uMaterial.roughness, i.uv).r;
 
-    vec3 color = calculate_brdf(albedo, normal, view_dir, metallic, roughness);
+    // sun light
+    vec3 color = vec3(0);
+    //color += calculate_brdf(albedo, normal, view_dir, metallic, roughness);
 
-    oFragColor = vec4(pow(color, vec3(1/2.2)), texture(uMaterial.albedo, i.uv).a);
+    // environment
+    vec3 N = normal;
+    vec3 V = view_dir;
+    vec3 F0 = mix(vec3(0.04), color, metallic);
+    vec3 F = fresnel_schlick_roughness(max(0, dot(N, V)), F0, roughness);
+
+    // diffuse
+    vec3 Kd = (1 - F) * (1 - metallic);
+    vec3 Li = texture(uDiffuseIrradianceMap, N).rgb;
+    vec3 diffuse = Li * albedo * Kd;
+
+    // specular, split-sum
+/*    float NoV = max(0, dot(N, V));
+    vec3 R = reflect(-V, N);
+    vec3 prefiltered_color = textureLod(uPrefilteredEnvironmentMap, R, roughness).rgb;
+    vec2 env_brdf = texture(uBrdfLut, vec2(NoV, roughness)).rg;
+    vec3 specular = prefiltered_color * (F * env_brdf.x + env_brdf.y);
+
+    color += (diffuse + specular);*/
+    color += diffuse;
+
+    oFragColor = vec4(tonemap(color), texture(uMaterial.albedo, i.uv).a);
 }
