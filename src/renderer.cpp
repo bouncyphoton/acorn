@@ -176,6 +176,9 @@ bool renderer_init(RenderOptions render_options) {
 
 void renderer_shutdown() {
     shader_destroy(material_shader);
+    shader_destroy(sky_shader);
+    shader_destroy(diffuse_irradiance_convolution_shader);
+    framebuffer_destroy(&diffuse_irradiance_fbo);
     framebuffer_destroy(&default_fbo);
 }
 
