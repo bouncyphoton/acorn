@@ -15,6 +15,7 @@ struct Camera {
     glm::vec3 position = glm::vec3(0);
     glm::vec3 look_at = glm::vec3(0, 0, -1);
     f32 fov_radians = glm::half_pi<f32>();
+    bool is_orbiting = true;
 };
 
 struct GameState {

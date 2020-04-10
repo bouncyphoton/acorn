@@ -3,14 +3,17 @@ project(acorn)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(acorn third-party/gl3w/gl3w.c src/main.cpp src/types.h src/window.h src/window.cpp src/renderer.cpp src/renderer.h src/shader.cpp src/shader.h src/renderable.h src/game_state.h src/model.cpp src/model.h src/material.h src/transform.h src/texture.cpp src/texture.h src/utils.h src/utils.cpp src/framebuffer.cpp src/framebuffer.h)
+add_executable(acorn
+        third-party/gl3w/gl3w.c third-party/imgui/imgui.cpp third-party/imgui/imgui_demo.cpp third-party/imgui/imgui_draw.cpp third-party/imgui/imgui_impl_glfw.cpp third-party/imgui/imgui_impl_opengl3.cpp third-party/imgui/imgui_widgets.cpp
+        src/main.cpp src/types.h src/window.h src/window.cpp src/renderer.cpp src/renderer.h src/shader.cpp src/shader.h src/renderable.h src/game_state.h src/model.cpp src/model.h src/material.h src/transform.h src/texture.cpp src/texture.h src/utils.h src/utils.cpp src/framebuffer.cpp src/framebuffer.h src/debug_gui.cpp src/debug_gui.h)
 
 target_include_directories(acorn PUBLIC
         src/
         third-party/gl3w/include
         third-party/glm
         third-party/tinyobjloader
-        third-party/stb)
+        third-party/stb
+        third-party/imgui)
 
 # GLFW build settings
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)

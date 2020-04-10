@@ -2,6 +2,7 @@
 #include "renderer.h"
 #include "texture.h"
 #include "model.h"
+#include "debug_gui.h"
 #include "game_state.h"
 #include <GLFW/glfw3.h>
 #include <cstdio>
@@ -44,6 +45,7 @@ static bool acorn_init() {
     if (!renderer_init(game_state.render_options)) return false;
     if (!textures_init()) return false;
     if (!assets_load()) return false;
+    if (!debug_gui_init()) return false;
 
     puts("[info] acorn successfully initialized");
 
@@ -53,6 +55,7 @@ static bool acorn_init() {
 static void acorn_shutdown() {
     puts("[info] shutting down acorn");
 
+    debug_gui_shutdown();
     assets_unload();
     textures_shutdown();
     renderer_shutdown();
@@ -85,9 +88,11 @@ static void acorn_run() {
 
         // TODO: remove temporary update
         {
-            f32 t = glfwGetTime() * 0.25f;
-            game_state.camera.position = glm::vec3(cos(t) * 2, 0, sin(t) * 2);
-            game_state.camera.look_at = glm::vec3(0, 0, 0);
+            if (game_state.camera.is_orbiting) {
+                f32 t = glfwGetTime() * 0.25f;
+                game_state.camera.position = glm::vec3(cos(t) * 2, 0, sin(t) * 2);
+                game_state.camera.look_at = glm::vec3(0, 0, 0);
+            }
 
             Model *spheres = &models[0];
             Model *rifle = &models[1];
@@ -123,6 +128,8 @@ static void acorn_run() {
 
         // draw frame
         renderer_draw(&game_state);
+
+        debug_gui_draw(&game_state);
 
         window_swap_buffers();
         window_poll_events();

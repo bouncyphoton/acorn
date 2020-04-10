@@ -48,7 +48,7 @@ static void APIENTRY opengl_debug_callback(GLenum source, GLenum type, GLuint id
                                            const GLchar *message, const void *user_param) {
     if (severity == GL_DEBUG_SEVERITY_HIGH) {
         fprintf(stderr, "[error][opengl] %s\n", message);
-    } else {
+    } else if (severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
         fprintf(stdout, "[debug][opengl] %s\n", message);
     }
 }

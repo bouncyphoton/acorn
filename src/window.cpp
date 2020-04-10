@@ -3,7 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <cstdio>
 
-static GLFWwindow *window = nullptr;
+GLFWwindow *window = nullptr;
 
 static void glfw_error_callback(int error, const char *desc) {
     fprintf(stderr, "[error][glfw][%d] %s\n", error, desc);
