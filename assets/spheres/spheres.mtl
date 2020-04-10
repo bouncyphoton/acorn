@@ -1,0 +1,122 @@
+# Blender MTL File: 'None'
+# Material Count: 15
+
+newmtl Material.001
+Pr 1.0
+Pm 0.0
+illum 2
+map_Kd white.png
+map_Pm white.png
+map_Pr white.png
+
+newmtl Material.002
+Pr 0.75
+Pm 0.0
+illum 2
+map_Kd white.png
+map_Pm white.png
+map_Pr white.png
+
+newmtl Material.003
+Pr 0.5
+Pm 0.0
+illum 2
+map_Kd white.png
+map_Pm white.png
+map_Pr white.png
+
+newmtl Material.004
+Pr 0.25
+Pm 0.0
+illum 2
+map_Kd white.png
+map_Pm white.png
+map_Pr white.png
+
+newmtl Material.005
+Pr 0.0
+Pm 0.0
+illum 2
+map_Kd white.png
+map_Pm white.png
+map_Pr white.png
+
+newmtl Material.006
+Pr 1.0
+Pm 0.0
+illum 2
+map_Kd black.png
+map_Pm white.png
+map_Pr white.png
+
+newmtl Material.007
+Pr 0.75
+Pm 0.0
+illum 2
+map_Kd black.png
+map_Pm white.png
+map_Pr white.png
+
+newmtl Material.008
+Pr 0.5
+Pm 0.0
+illum 2
+map_Kd black.png
+map_Pm white.png
+map_Pr white.png
+
+newmtl Material.009
+Pr 0.25
+Pm 0.0
+illum 2
+map_Kd black.png
+map_Pm white.png
+map_Pr white.png
+
+newmtl Material.010
+Pr 0.0
+Pm 0.0
+illum 2
+map_Kd black.png
+map_Pm white.png
+map_Pr white.png
+
+newmtl Material.011
+Pr 1.0
+Pm 1.0
+illum 3
+map_Kd white.png
+map_Pm white.png
+map_Pr white.png
+
+newmtl Material.012
+Pr 0.75
+Pm 1.0
+illum 3
+map_Kd white.png
+map_Pm white.png
+map_Pr white.png
+
+newmtl Material.013
+Pr 0.5
+Pm 1.0
+illum 3
+map_Kd white.png
+map_Pm white.png
+map_Pr white.png
+
+newmtl Material.014
+Pr 0.25
+Pm 1.0
+illum 3
+map_Kd white.png
+map_Pm white.png
+map_Pr white.png
+
+newmtl Material.015
+Pr 0.0
+Pm 1.0
+illum 3
+map_Kd white.png
+map_Pm white.png
+map_Pr white.png

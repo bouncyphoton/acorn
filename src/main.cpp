@@ -15,7 +15,7 @@ static Model models[NUM_MODELS] = {};
 
 static bool assets_load() {
     // load models
-    models[0] = model_load("../assets/stylized-rifle/Stylized_rifle_final.obj", "../assets/stylized-rifle");
+    models[0] = model_load("../assets/spheres/spheres.obj", "../assets/spheres");
 
     return true;
 }
@@ -35,7 +35,7 @@ static bool acorn_init() {
     game_state.render_options.height = 600;
     game_state.camera.position = glm::vec3(1, 0, 0);
     game_state.camera.look_at = glm::vec3(0, 0, -1);
-    game_state.camera.fov_radians = glm::half_pi<f32>();
+    game_state.camera.fov_radians = glm::quarter_pi<f32>();
     game_state.sun_direction = glm::normalize(glm::vec3(-1, 1, 1));
 
     if (!window_init(game_state.render_options, window_title)) return false;
@@ -63,37 +63,27 @@ static void acorn_run() {
         auto now = std::chrono::system_clock::now();
         f32 ms_since_last_frame = std::chrono::duration_cast<std::chrono::microseconds>(now - last).count() / 1000.0f;
         RenderStats stats = renderer_get_stats();
-        printf("frame took %.2fms (%d fps)\n", ms_since_last_frame, (int) (1000.0f / ms_since_last_frame));
-        printf("render stats:\nverts: %d\ncalls: %d\n\n", stats.vertices_rendered, stats.draw_calls);
+//        printf("frame took %.2fms (%d fps)\n", ms_since_last_frame, (int) (1000.0f / ms_since_last_frame));
+//        printf("render stats:\nverts: %d\ncalls: %d\n\n", stats.vertices_rendered, stats.draw_calls);
         last = now;
 
         window_update();
 
         // TODO: remove temporary update
         {
-            f32 t = glfwGetTime() * 0.5f;
-            game_state.camera.position = glm::vec3(cos(t) * 2, 0.5, sin(t) * 2);
+            f32 t = glfwGetTime() * 0.25f;
+            game_state.camera.position = glm::vec3(cos(t) * 2, 0, sin(t) * 2);
             game_state.camera.look_at = glm::vec3(0, 0, 0);
 
-            // stylized gun
-            Model *gun_model = &models[0];
+            Model *model = &models[0];
 
             renderer_queue_renderable(Renderable{
                     Transform{
-                            glm::vec3(0, 0, -0.5f),
+                            glm::vec3(0, 0, 0),
                             glm::identity<glm::quat>(),
-                            glm::vec3(0.05f)
+                            glm::vec3(1.0f)
                     },
-                    gun_model
-            });
-
-            renderer_queue_renderable(Renderable{
-                    Transform{
-                            glm::vec3(0, 0, 0.5f),
-                            glm::quat(glm::vec3(0, glm::pi<f32>(), 0)),
-                            glm::vec3(0.05f)
-                    },
-                    gun_model
+                    model
             });
         }
 

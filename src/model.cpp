@@ -66,10 +66,12 @@ Model model_load(const char *obj_path, const char *mtl_dir) {
             // metallic
             std::string metallic_path = dir + materials[i].metallic_texname;
             model.materials[i].metallic_texture = texture_get(metallic_path.c_str(), BuiltInTextureEnum::BLACK);
+            model.materials[i].metallic_scale = materials[i].metallic;
 
             // roughness
             std::string roughness_path = dir + materials[i].roughness_texname;
             model.materials[i].roughness_texture = texture_get(roughness_path.c_str(), BuiltInTextureEnum::WHITE);
+            model.materials[i].roughness_scale = materials[i].roughness;
         }
     }
 

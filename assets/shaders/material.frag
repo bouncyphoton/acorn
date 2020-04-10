@@ -14,7 +14,9 @@ uniform struct {
     sampler2D albedo;
     sampler2D normal;
     sampler2D metallic;
+    float metallic_scale;
     sampler2D roughness;
+    float roughness_scale;
 } uMaterial;
 
 uniform samplerCube uDiffuseIrradianceMap;
@@ -51,8 +53,8 @@ vec3 fresnel_schlick(float cos_theta, vec3 F0) {
     return F0 + (1.0 - F0) * pow(1.0 - cos_theta, 5.0);
 }
 
-vec3 fresnel_schlick_roughness(float cosTheta, vec3 F0, float roughness) {
-    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
+vec3 fresnel_schlick_roughness(float cos_theta, vec3 F0, float roughness) {
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cos_theta, 5.0);
 }
 
 float geometry_schlick_ggx(float NdotV, float roughness) {
@@ -116,18 +118,18 @@ void main() {
     vec3 albedo = pow(texture(uMaterial.albedo, i.uv).rgb, vec3(2.2));
     vec3 normal = normalize(i.tbn * (texture(uMaterial.normal, i.uv).rgb * 2 - 1));
     vec3 view_dir = normalize(uCameraPosition - i.position);
-    float metallic = texture(uMaterial.metallic, i.uv).r;
-    float roughness = texture(uMaterial.roughness, i.uv).r;
+    float metallic = texture(uMaterial.metallic, i.uv).r * uMaterial.metallic_scale;
+    float roughness = texture(uMaterial.roughness, i.uv).r * uMaterial.roughness_scale;
 
     vec3 color = vec3(0);
 
     // sun light
-    //    color += calculate_brdf(albedo, normal, view_dir, metallic, roughness);
+//    color += calculate_brdf(albedo, normal, view_dir, metallic, roughness);
 
     // environment
     vec3 N = normal;
     vec3 V = view_dir;
-    vec3 F0 = mix(vec3(0.04), color, metallic);
+    vec3 F0 = mix(vec3(0.04), albedo, metallic);
     vec3 F = fresnel_schlick_roughness(max(0, dot(N, V)), F0, roughness);
 
     // diffuse

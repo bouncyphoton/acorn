@@ -54,7 +54,7 @@ vec3 importance_sample_ggx(vec2 Xi, float roughness, vec3 N) {
     vec3 up = abs(N.z) < 0.999 ? vec3(0, 0, 1) : vec3(1, 0, 0);
     vec3 tan_x = normalize(cross(up, N));
     vec3 tan_y = cross(N, tan_x);
-    // tangent to world sapce
+    // tangent to world space
     return tan_x * H.x + tan_y * H.y + N * H.z;
 }
 

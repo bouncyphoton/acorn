@@ -346,11 +346,13 @@ static void renderer_draw_scene(GameState *game_state) {
             glActiveTexture(GL_TEXTURE0 + texture_idx);
             glBindTexture(GL_TEXTURE_2D, material->metallic_texture);
             shader_set_int(material_shader, "uMaterial.metallic", texture_idx);
+            shader_set_float(material_shader, "uMaterial.metallic_scale", material->metallic_scale);
             ++texture_idx;
 
             glActiveTexture(GL_TEXTURE0 + texture_idx);
             glBindTexture(GL_TEXTURE_2D, material->roughness_texture);
             shader_set_int(material_shader, "uMaterial.roughness", texture_idx);
+            shader_set_float(material_shader, "uMaterial.roughness_scale", material->roughness_scale);
             ++texture_idx;
 
             glBindVertexArray(mesh->vao);
