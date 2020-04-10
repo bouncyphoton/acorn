@@ -4,7 +4,7 @@ in VertexData {
     vec3 dir;
 } i;
 
-uniform samplerCube uSkybox;
+uniform samplerCube uEnvMap;
 
 vec3 tonemap(vec3 x) {
     x = pow(x, vec3(1/2.2));
@@ -18,5 +18,5 @@ vec3 tonemap(vec3 x) {
 }
 
 void main() {
-    gl_FragColor = vec4(tonemap(texture(uSkybox, i.dir).rgb), 1);
+    gl_FragColor = vec4(tonemap(texture(uEnvMap, i.dir).rgb), 1);
 }

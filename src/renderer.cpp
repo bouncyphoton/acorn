@@ -16,11 +16,16 @@ static u32 num_renderables_queued = 0;
 static Renderable renderables[MAX_RENDERABLES_PER_FRAME] = {};
 
 // textures
-static u32 skybox_texture = 0;
+static u32 default_fbo_texture = 0;
+static u32 environment_map = 0;
+static u32 diffuse_irradiance_cubemap = 0;
+static u32 prefiltered_env_cubemap = 0;
+static u32 num_prefiltered_env_mipmap_levels; // not a texture, but important for prefiltered env cubemap
+static u32 brdf_lut = 0;
 
 // framebuffers
 static Framebuffer default_fbo = {};
-static Framebuffer diffuse_irradiance_fbo = {};
+static Framebuffer working_fbo = {};
 
 // shaders
 static u32 material_shader = 0;
@@ -58,7 +63,10 @@ bool renderer_init(RenderOptions render_options) {
 
     // TODO: don't hardcode skybox textures into renderer
 
+    //--------------
     // init textures
+    //--------------
+
     // NOTE/TODO: this code runs before textures_init, so image isn't flipped (which in this case, is good)
     s32 w, h;
     void *data[6] = {
@@ -69,27 +77,39 @@ bool renderer_init(RenderOptions render_options) {
             stbi_loadf("../assets/env/pz.hdr", &w, &h, nullptr, 3),
             stbi_loadf("../assets/env/nz.hdr", &w, &h, nullptr, 3)
     };
-    skybox_texture = texture_cubemap_create(GL_RGB16F, w, h, GL_FLOAT, data, GL_RGB);
+    environment_map = texture_cubemap_create(GL_RGB16F, w, h, GL_FLOAT, data, GL_RGB);
     for (int i = 0; i < 6; ++i) {
         free(data[i]);
     }
 
+    // TODO: don't only use w and h variables - especially for prefiltered env cubemap
+    diffuse_irradiance_cubemap = texture_cubemap_create(GL_RGB16F, w, h, GL_FLOAT, nullptr, GL_RGB);
+    prefiltered_env_cubemap = texture_cubemap_create(GL_RGB16F, w, h, GL_FLOAT, nullptr, GL_RGB);
+    brdf_lut = texture_2d_create(GL_RG16F, 512, 512, GL_FLOAT, nullptr, GL_RG); // TODO: remove 512 magic number
+
+    //----------
     // init fbos
-    default_fbo = framebuffer_create(
-            texture_2d_create(GL_RGB16F, render_options.width, render_options.height, GL_FLOAT, nullptr, GL_RGB), true
-    );
-    if (default_fbo.id == 0) {
+    //----------
+
+    default_fbo = framebuffer_create(render_options.width, render_options.height);
+    framebuffer_bind(&default_fbo);
+    default_fbo_texture = texture_2d_create(GL_RGB16F, render_options.width, render_options.height, GL_FLOAT, nullptr, GL_RGB);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, default_fbo_texture, 0);
+
+    if (default_fbo_texture == 0 || default_fbo.id == 0) {
         return false;
     }
 
-    diffuse_irradiance_fbo = framebuffer_create(
-            texture_cubemap_create(GL_RGB16F, w, h, GL_FLOAT, nullptr, GL_RGB), false
-    );
-    if (diffuse_irradiance_fbo.id == 0) {
+    working_fbo = framebuffer_create(w, h);
+    if (working_fbo.id == 0) {
         return false;
     }
 
+    //-------------
     // init shaders
+    //-------------
+
+    // material
     char *material_vert = load_file_as_string("../assets/shaders/material.vert");
     char *material_frag = load_file_as_string("../assets/shaders/material.frag");
     material_shader = shader_create(material_vert, material_frag);
@@ -99,6 +119,7 @@ bool renderer_init(RenderOptions render_options) {
     free(material_vert);
     free(material_frag);
 
+    // sky
     char *cube_vert = load_file_as_string("../assets/shaders/cube.vert");
     char *sky_frag = load_file_as_string("../assets/shaders/sky.frag");
     sky_shader = shader_create(cube_vert, sky_frag);
@@ -107,6 +128,7 @@ bool renderer_init(RenderOptions render_options) {
     }
     free(sky_frag);
 
+    // diffuse irradiance
     char *diffuse_irradiance_convolution_frag = load_file_as_string(
             "../assets/shaders/diffuse_irradiance_convolution.frag");
     diffuse_irradiance_convolution_shader = shader_create(cube_vert, diffuse_irradiance_convolution_frag);
@@ -115,23 +137,24 @@ bool renderer_init(RenderOptions render_options) {
     }
     free(diffuse_irradiance_convolution_frag);
 
-/*    char *env_map_prefilter_frag = load_file_as_string("../assets/shaders/env_map_prefilter.frag");
+    // prefilter
+    char *env_map_prefilter_frag = load_file_as_string("../assets/shaders/env_map_prefilter.frag");
     env_map_prefilter_shader = shader_create(cube_vert, env_map_prefilter_frag);
     if (env_map_prefilter_shader == 0) {
         return false;
     }
-    free(env_map_prefilter_frag);*/
+    free(env_map_prefilter_frag);
     free(cube_vert);
 
     // brdf lut
-/*    char *fullscreen_vert = load_file_as_string("../assets/shaders/fullscreen.vert");
-    char *brdf_lut_frag = load_file_as_string("../assets/shaders/brdf_lut.vert");
+    char *fullscreen_vert = load_file_as_string("../assets/shaders/fullscreen.vert");
+    char *brdf_lut_frag = load_file_as_string("../assets/shaders/brdf_lut.frag");
     brdf_lut_shader = shader_create(fullscreen_vert, brdf_lut_frag);
     if (brdf_lut_shader == 0) {
         return false;
     }
     free(fullscreen_vert);
-    free(brdf_lut_frag);*/
+    free(brdf_lut_frag);
 
     // dummy vao
     glGenVertexArrays(1, &dummy_vao);
@@ -140,18 +163,9 @@ bool renderer_init(RenderOptions render_options) {
         return false;
     }
 
-    // precomputation: convolve diffuse irradiance
-    puts("precomputing: convolve diffuse irradiance");
-    framebuffer_bind(&diffuse_irradiance_fbo);
-    glViewport(0, 0, w, h);
-    shader_bind(diffuse_irradiance_convolution_shader);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_texture);
-    shader_set_int(diffuse_irradiance_convolution_shader, "uSky", 0);
-
-    // TODO: fix
-
+    // precomputations
+    framebuffer_bind(&working_fbo);
+    glDisable(GL_DEPTH_TEST);
     glm::mat4 views[6] = {
             glm::lookAt(glm::vec3(0, 0, 0), glm::vec3(1, 0, 0), glm::vec3(0, -1, 0)),
             glm::lookAt(glm::vec3(0, 0, 0), glm::vec3(-1, 0, 0), glm::vec3(0, -1, 0)),
@@ -161,16 +175,65 @@ bool renderer_init(RenderOptions render_options) {
             glm::lookAt(glm::vec3(0, 0, 0), glm::vec3(0, 0, -1), glm::vec3(0, -1, 0))
     };
     glm::mat4 proj = glm::perspective(glm::half_pi<f32>(), 1.0f, 0.01f, 10.0f);
+
+    // diffuse
+    shader_bind(diffuse_irradiance_convolution_shader);
+    glViewport(0, 0, w, h);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, environment_map);
+    shader_set_int(diffuse_irradiance_convolution_shader, "uEnvMap", 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, diffuse_irradiance_cubemap, 0);
     for (u32 face = 0; face < 6; ++face) {
         shader_set_mat4(diffuse_irradiance_convolution_shader, "uViewProjectionMatrix", proj * views[face]);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + face,
-                               diffuse_irradiance_fbo.texture, 0);
+                               diffuse_irradiance_cubemap, 0);
         glClear(GL_COLOR_BUFFER_BIT);
         glBindVertexArray(dummy_vao);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 14);
         glBindVertexArray(0);
     }
 
+    // update mipmaps for diffuse irradiance cubemap
+    glBindTexture(GL_TEXTURE_CUBE_MAP, diffuse_irradiance_cubemap);
+    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+
+    // prefilter
+    shader_bind(env_map_prefilter_shader);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, environment_map);
+    shader_set_int(env_map_prefilter_shader, "uEnvMap", 0);
+
+    num_prefiltered_env_mipmap_levels = floor(log2(w));
+    for (u32 level = 0; level <= num_prefiltered_env_mipmap_levels; ++level) {
+        shader_set_float(env_map_prefilter_shader, "uRoughness", (f32)level / (f32)(num_prefiltered_env_mipmap_levels));
+        glViewport(0, 0, w * pow(0.5f, level), h * pow(0.5f, level));
+        for (u32 face = 0; face < 6; ++face) {
+            shader_set_mat4(env_map_prefilter_shader, "uViewProjectionMatrix", proj * views[face]);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + face,
+                                   prefiltered_env_cubemap, level);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            glBindVertexArray(dummy_vao);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 14);
+            glBindVertexArray(0);
+        }
+    }
+
+    // brdf
+    shader_bind(brdf_lut_shader);
+    glViewport(0, 0, 512, 512);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdf_lut, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glBindVertexArray(dummy_vao);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
+
+    // update mipmaps for brdf lut
+    glBindTexture(GL_TEXTURE_2D, brdf_lut);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    glEnable(GL_DEPTH_TEST);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     return true;
 }
 
@@ -178,7 +241,11 @@ void renderer_shutdown() {
     shader_destroy(material_shader);
     shader_destroy(sky_shader);
     shader_destroy(diffuse_irradiance_convolution_shader);
-    framebuffer_destroy(&diffuse_irradiance_fbo);
+    texture_destroy(brdf_lut);
+    texture_destroy(environment_map);
+    texture_destroy(diffuse_irradiance_cubemap);
+    texture_destroy(default_fbo_texture);
+    framebuffer_destroy(&working_fbo);
     framebuffer_destroy(&default_fbo);
 }
 
@@ -226,8 +293,20 @@ static void renderer_draw_scene(GameState *game_state) {
     // TODO: take tonemapping out of sky.frag and material.frag to separate pass to keep everything linear
 
     glActiveTexture(GL_TEXTURE0 + texture_idx);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, diffuse_irradiance_fbo.texture);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, diffuse_irradiance_cubemap);
     shader_set_int(material_shader, "uDiffuseIrradianceMap", texture_idx);
+    ++texture_idx;
+
+    glActiveTexture(GL_TEXTURE0 + texture_idx);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, prefiltered_env_cubemap);
+    shader_set_int(material_shader, "uPrefilteredEnvironmentMap", texture_idx);
+    ++texture_idx;
+
+    shader_set_int(material_shader, "uNumPrefilteredEnvMipmapLevels", num_prefiltered_env_mipmap_levels);
+
+    glActiveTexture(GL_TEXTURE0 + texture_idx);
+    glBindTexture(GL_TEXTURE_2D, brdf_lut);
+    shader_set_int(material_shader, "uBrdfLut", texture_idx);
     ++texture_idx;
 
     // sun
@@ -300,8 +379,8 @@ static void renderer_draw_sky(GameState *game_state) {
                                 glm::vec3(0, 1, 0)));
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_texture);
-    shader_set_int(sky_shader, "uSkybox", 0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, environment_map);
+    shader_set_int(sky_shader, "uEnvMap", 0);
 
     glBindVertexArray(dummy_vao);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 14);
@@ -314,9 +393,6 @@ static void renderer_draw_sky(GameState *game_state) {
 void renderer_draw(GameState *game_state) {
     // bind default fbo
     framebuffer_bind(&default_fbo);
-    s32 width, height;
-    texture_2d_get_dimensions(default_fbo.texture, 0, &width, &height);
-    glViewport(0, 0, width, height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // draw scene

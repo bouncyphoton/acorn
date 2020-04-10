@@ -10,7 +10,9 @@ void shader_destroy(u32 shader);
 
 void shader_bind(u32 shader);
 
-void shader_set_int(u32 shader, const char *uniform_name, int value);
+void shader_set_int(u32 shader, const char *uniform_name, u32 value);
+
+void shader_set_float(u32 shader, const char *uniform_name, f32 value);
 
 void shader_set_vec3(u32 shader, const char *uniform_name, glm::vec3 value);
 

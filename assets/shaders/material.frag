@@ -20,6 +20,7 @@ uniform struct {
 uniform samplerCube uDiffuseIrradianceMap;
 uniform samplerCube uPrefilteredEnvironmentMap;
 uniform sampler2D uBrdfLut;
+uniform int uNumPrefilteredEnvMipmapLevels;
 
 uniform vec3 uSunDirection;
 uniform vec3 uCameraPosition;
@@ -109,7 +110,8 @@ vec3 tonemap(vec3 x) {
 }
 
 void main() {
-    if (texture(uMaterial.albedo, i.uv).a == 0) discard;
+    // TODO: alpha threshold seems a bit high for test models to work, check out textures
+    if (texture(uMaterial.albedo, i.uv).a <= 0.1) discard;
 
     vec3 albedo = pow(texture(uMaterial.albedo, i.uv).rgb, vec3(2.2));
     vec3 normal = normalize(i.tbn * (texture(uMaterial.normal, i.uv).rgb * 2 - 1));
@@ -117,9 +119,10 @@ void main() {
     float metallic = texture(uMaterial.metallic, i.uv).r;
     float roughness = texture(uMaterial.roughness, i.uv).r;
 
-    // sun light
     vec3 color = vec3(0);
-    //color += calculate_brdf(albedo, normal, view_dir, metallic, roughness);
+
+    // sun light
+    //    color += calculate_brdf(albedo, normal, view_dir, metallic, roughness);
 
     // environment
     vec3 N = normal;
@@ -133,14 +136,13 @@ void main() {
     vec3 diffuse = Li * albedo * Kd;
 
     // specular, split-sum
-/*    float NoV = max(0, dot(N, V));
+    float NdotV = max(0, dot(N, V));
     vec3 R = reflect(-V, N);
-    vec3 prefiltered_color = textureLod(uPrefilteredEnvironmentMap, R, roughness).rgb;
-    vec2 env_brdf = texture(uBrdfLut, vec2(NoV, roughness)).rg;
+    vec3 prefiltered_color = textureLod(uPrefilteredEnvironmentMap, R, roughness * uNumPrefilteredEnvMipmapLevels).rgb;
+    vec2 env_brdf = texture(uBrdfLut, vec2(NdotV, roughness)).rg;
     vec3 specular = prefiltered_color * (F * env_brdf.x + env_brdf.y);
 
-    color += (diffuse + specular);*/
-    color += diffuse;
+    color += (diffuse + specular);
 
     oFragColor = vec4(tonemap(color), texture(uMaterial.albedo, i.uv).a);
 }

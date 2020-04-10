@@ -7,7 +7,7 @@ in VertexData {
     vec3 dir;
 } i;
 
-uniform samplerCube uSky;
+uniform samplerCube uEnvMap;
 
 void main() {
     vec3 N = normalize(i.dir);
@@ -21,7 +21,7 @@ void main() {
         for (float theta = 0; theta < PI * 0.5; theta += 0.025) {
             vec3 temp = cos(phi) * right + sin(phi) * up;
             vec3 sampleVec = cos(theta) * N + sin(theta) * temp;
-            irradiance += texture(uSky, sampleVec).rgb * cos(theta) * sin(theta);
+            irradiance += texture(uEnvMap, sampleVec).rgb * cos(theta) * sin(theta);
             ++num_samples;
         }
     }

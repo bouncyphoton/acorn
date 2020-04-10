@@ -1,6 +1,7 @@
 #include "shader.h"
 #include <GL/gl3w.h>
 #include <vector>
+#include <cstdio>
 
 // TODO: make prettier
 u32 shader_create(const char *vertex_src, const char *fragment_src) {
@@ -88,9 +89,14 @@ static s32 shader_get_uniform_location(u32 shader, const char *uniform_name) {
     return glGetUniformLocation(shader, uniform_name);
 }
 
-void shader_set_int(u32 shader, const char *uniform_name, int value) {
+void shader_set_int(u32 shader, const char *uniform_name, u32 value) {
     s32 location = shader_get_uniform_location(shader, uniform_name);
     glUniform1i(location, value);
+}
+
+void shader_set_float(u32 shader, const char *uniform_name, f32 value) {
+    s32 location = shader_get_uniform_location(shader, uniform_name);
+    glUniform1f(location, value);
 }
 
 void shader_set_vec3(u32 shader, const char *uniform_name, glm::vec3 value) {

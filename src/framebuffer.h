@@ -6,13 +6,12 @@
 
 struct Framebuffer {
     u32 id = 0;
-    u32 texture = 0;
+    u32 width = 0;
+    u32 height = 0;
     u32 depth_renderbuffer = 0;
 };
 
-// TODO: figure out how this could be done better
-
-Framebuffer framebuffer_create(u32 texture, bool depth_renderbuffer);
+Framebuffer framebuffer_create(u32 width, u32 height);
 
 void framebuffer_destroy(Framebuffer *fbo);
 
