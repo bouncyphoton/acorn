@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <chrono>
 
-#define NUM_MODELS 1
+#define NUM_MODELS 3
 // TODO: move data, preferably to a memory arena
 static Model models[NUM_MODELS] = {};
 
@@ -16,6 +16,8 @@ static Model models[NUM_MODELS] = {};
 static bool assets_load() {
     // load models
     models[0] = model_load("../assets/spheres/spheres.obj", "../assets/spheres");
+    models[1] = model_load("../assets/stylized-rifle/Stylized_rifle_final.obj", "../assets/stylized-rifle");
+    models[2] = model_load("../assets/rock03/3DRock003_16K.obj", "../assets/rock03");
 
     return true;
 }
@@ -31,8 +33,8 @@ static GameState game_state = {};
 
 static bool acorn_init() {
     const char *window_title = "acorn";
-    game_state.render_options.width = 800;
-    game_state.render_options.height = 600;
+    game_state.render_options.width = 1024;
+    game_state.render_options.height = 768;
     game_state.camera.position = glm::vec3(1, 0, 0);
     game_state.camera.look_at = glm::vec3(0, 0, -1);
     game_state.camera.fov_radians = glm::quarter_pi<f32>();
@@ -75,15 +77,35 @@ static void acorn_run() {
             game_state.camera.position = glm::vec3(cos(t) * 2, 0, sin(t) * 2);
             game_state.camera.look_at = glm::vec3(0, 0, 0);
 
-            Model *model = &models[0];
+            Model *spheres = &models[0];
+            Model *rifle = &models[1];
+            Model *rock = &models[2];
 
             renderer_queue_renderable(Renderable{
                     Transform{
-                            glm::vec3(0, 0, 0),
+                            glm::vec3(0, 0.15, 0),
                             glm::identity<glm::quat>(),
                             glm::vec3(1.0f)
                     },
-                    model
+                    spheres
+            });
+
+            renderer_queue_renderable(Renderable{
+                    Transform{
+                            glm::vec3(0, -0.45, -0.35),
+                            glm::vec3(0, glm::half_pi<f32>(), 0),
+                            glm::vec3(0.01f)
+                    },
+                    rifle
+            });
+
+            renderer_queue_renderable(Renderable{
+                    Transform{
+                            glm::vec3(0, -0.45, 0.35),
+                            glm::vec3(0, glm::half_pi<f32>(), 0),
+                            glm::vec3(1.0f)
+                    },
+                    rock
             });
         }
 

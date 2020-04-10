@@ -4,3 +4,5 @@ map_Kd textures/lambert2SG_albedo.jpg
 norm textures/lambert2SG_normal.png
 map_Pm textures/lambert2SG_metallic.jpg
 map_Pr textures/lambert2SG_roughness.jpg
+Pr 1.0
+Pm 1.0
