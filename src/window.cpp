@@ -45,7 +45,7 @@ void window_shutdown() {
     glfwTerminate();
 }
 
-void window_update() {
+void window_poll_events() {
     glfwPollEvents();
 }
 

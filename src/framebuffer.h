@@ -4,6 +4,8 @@
 #include "types.h"
 #include <GL/gl3w.h>
 
+// TODO: framebuffer resize
+
 struct Framebuffer {
     u32 id = 0;
     u32 width = 0;

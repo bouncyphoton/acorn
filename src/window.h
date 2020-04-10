@@ -8,7 +8,7 @@ bool window_init(RenderOptions render_options, const char *title);
 
 void window_shutdown();
 
-void window_update();
+void window_poll_events();
 
 void window_swap_buffers();
 
