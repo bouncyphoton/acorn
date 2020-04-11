@@ -1,4 +1,5 @@
 #include "debug_gui.h"
+#include "renderer.h"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -45,9 +46,11 @@ void debug_gui_draw(GameState *game_state) {
 
     ImGui::Begin("Debug");
     {
-        ImGui::Text("Performance");
-        ImGui::Text("Frametime: %.2fms", 1000.0f / io.Framerate);
-        ImGui::Text("FPS: %.2ffps", io.Framerate);
+        RenderStats stats = renderer_get_stats();
+        ImGui::Text("Performance Stats");
+        ImGui::Text("%.2fms / %.2f FPS", 1000.0f / io.Framerate, io.Framerate);
+        ImGui::Text("%d verts", stats.vertices_rendered);
+        ImGui::Text("%d draw calls", stats.draw_calls);
         ImGui::Separator();
 
         ImGui::Text("Camera");
