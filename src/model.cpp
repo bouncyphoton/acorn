@@ -10,7 +10,7 @@
 #undef min
 #undef max
 
-Model model_load(const char *obj_path, const char *mtl_dir) {
+Model model_load_from_obj(const char *obj_path, const char *mtl_dir) {
     printf("[info] loading model \"%s\"\n", obj_path);
     Model model = {};
 

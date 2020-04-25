@@ -28,7 +28,7 @@ struct Model {
     Mesh *meshes = nullptr;
 };
 
-Model model_load(const char *obj_path, const char *mtl_dir);
+Model model_load_from_obj(const char *obj_path, const char *mtl_dir);
 
 void model_free(Model *model);
 

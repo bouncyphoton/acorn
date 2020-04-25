@@ -1,9 +1,7 @@
 #include "window.h"
-#include <GL/gl3w.h>
-#include <GLFW/glfw3.h>
 #include <cstdio>
 
-GLFWwindow *window = nullptr;
+static GLFWwindow *window = nullptr;
 
 static void glfw_error_callback(int error, const char *desc) {
     fprintf(stderr, "[error][glfw][%d] %s\n", error, desc);
@@ -55,4 +53,8 @@ void window_swap_buffers() {
 
 bool window_should_close() {
     return glfwWindowShouldClose(window);
+}
+
+GLFWwindow *window_get_glfw_window() {
+    return window;
 }

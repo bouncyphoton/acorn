@@ -1,13 +1,12 @@
 #include "debug_gui.h"
-#include "renderer.h"
+#include "window.h"
 
+#include "renderer.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
-
-extern GLFWwindow *window;
 
 bool debug_gui_init() {
     const char *glsl_version = "#version 330 core";
@@ -17,7 +16,7 @@ bool debug_gui_init() {
 
     ImGui::StyleColorsDark();
 
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplGlfw_InitForOpenGL(window_get_glfw_window(), true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     return true;
@@ -67,7 +66,7 @@ void debug_gui_draw(GameState *game_state) {
 
     ImGui::Render();
     int display_w, display_h;
-    glfwGetFramebufferSize(window, &display_w, &display_h);
+    glfwGetFramebufferSize(window_get_glfw_window(), &display_w, &display_h);
     glViewport(0, 0, display_w, display_h);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }

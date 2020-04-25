@@ -6,7 +6,6 @@
 #include "game_state.h"
 #include <GLFW/glfw3.h>
 #include <cstdio>
-#include <chrono>
 
 #define NUM_MODELS 3
 // TODO: move data, preferably to a memory arena
@@ -14,11 +13,12 @@ static Model models[NUM_MODELS] = {};
 
 // TODO: stop hardcoding assets directory
 
+// TODO: make model asset loading fast
 static bool assets_load() {
     // load models
-    models[0] = model_load("../assets/spheres/spheres.obj", "../assets/spheres");
-    models[1] = model_load("../assets/stylized-rifle/Stylized_rifle_final.obj", "../assets/stylized-rifle");
-    models[2] = model_load("../assets/rock03/3DRock003_16K.obj", "../assets/rock03");
+    models[0] = model_load_from_obj("../assets/spheres/spheres.obj", "../assets/spheres");
+    models[1] = model_load_from_obj("../assets/stylized-rifle/Stylized_rifle_final.obj", "../assets/stylized-rifle");
+    models[2] = model_load_from_obj("../assets/rock03/3DRock003_16K.obj", "../assets/rock03");
 
     return true;
 }
@@ -63,29 +63,7 @@ static void acorn_shutdown() {
 }
 
 static void acorn_run() {
-    auto last = std::chrono::system_clock::now();
-    f32 ms_since_last_print = 0;
-    uint32_t frames_since_last_print = 0;
     while (!window_should_close()) {
-        auto now = std::chrono::system_clock::now();
-        f32 ms_since_last_frame = std::chrono::duration_cast<std::chrono::microseconds>(now - last).count() / 1000.0f;
-        last = now;
-
-        ms_since_last_print += ms_since_last_frame;
-        ++frames_since_last_print;
-
-        if (ms_since_last_print > 1000.0f) {
-            RenderStats stats = renderer_get_stats();
-            f32 avg_ms = ms_since_last_print / frames_since_last_print;
-
-            printf("avg since last print %.2fms (%d fps)\n", avg_ms, (int)(1000.0f / avg_ms));
-            printf("latest frame took %.2fms (%d fps)\n", ms_since_last_frame, (int) (1000.0f / ms_since_last_frame));
-            printf("render stats:\nverts: %d\ncalls: %d\n\n", stats.vertices_rendered, stats.draw_calls);
-
-            ms_since_last_print = 0;
-            frames_since_last_print = 0;
-        }
-
         // TODO: remove temporary update
         {
             if (game_state.camera.is_orbiting) {
