@@ -9,14 +9,17 @@ struct RenderStats {
     u32 draw_calls = 0;
 };
 
-bool renderer_init(RenderOptions render_options);
+class Renderer {
+public:
+    void init();
 
-void renderer_shutdown();
+    void destroy();
 
-void renderer_queue_renderable(Renderable renderable);
+    void queueRenderable(Renderable renderable);
 
-void renderer_draw(GameState *game_state);
+    void render();
 
-RenderStats renderer_get_stats();
+    RenderStats getStats();
+};
 
 #endif //ACORN_RENDERER_H
