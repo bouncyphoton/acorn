@@ -5,45 +5,10 @@
 #include "utils.h"
 #include "texture.h"
 #include "core.h"
+#include "constants.h"
 #include <stb_image.h>
 #include <GL/gl3w.h>
 #include <cstdio>
-
-#define RENDERER_DEBUG_CHECKING_ENABLED true
-#define MAX_RENDERABLES_PER_FRAME 10
-
-#define DIFF_IRR_SIZE 32  // resolution for diffuse irradiance texture
-#define PF_ENV_SIZE 128   // resolution for prefiltered environment map texture
-#define BRDF_LUT_SIZE 512 // resolution for brdf look-up-table texture
-
-// renderable queuing
-static u32 num_renderables_queued = 0;
-static Renderable renderables[MAX_RENDERABLES_PER_FRAME] = {};
-
-// textures
-static u32 default_fbo_texture = 0;
-static u32 environment_map = 0;
-static u32 diffuse_irradiance_cubemap = 0;
-static u32 prefiltered_env_cubemap = 0;
-static u32 num_prefiltered_env_mipmap_levels; // not a texture, but important for prefiltered env cubemap
-static u32 brdf_lut = 0;
-
-// framebuffers
-static Framebuffer default_fbo = {};
-static Framebuffer working_fbo = {};
-
-// shaders
-static u32 material_shader = 0;
-static u32 sky_shader = 0;
-static u32 diffuse_irradiance_shader = 0;
-static u32 env_map_prefilter_shader = 0;
-static u32 brdf_lut_shader = 0;
-
-// dummy vao
-static u32 dummy_vao = 0;
-
-// render stats
-static RenderStats render_stats = {};
 
 static void APIENTRY opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
                                            const GLchar *message, const void *user_param) {
@@ -83,20 +48,28 @@ void Renderer::init() {
             stbi_loadf("../assets/env/pz.hdr", &w, &h, nullptr, 3),
             stbi_loadf("../assets/env/nz.hdr", &w, &h, nullptr, 3)
     };
-    environment_map = texture_cubemap_create(GL_RGB16F, w, h, GL_FLOAT, data, GL_RGB);
+    m_environmentMap = texture_cubemap_create(GL_RGB16F, w, h, GL_FLOAT, data, GL_RGB);
     for (int i = 0; i < 6; ++i) {
         free(data[i]);
     }
 
-    diffuse_irradiance_cubemap = texture_cubemap_create(GL_RGB16F, DIFF_IRR_SIZE, DIFF_IRR_SIZE,
+    m_diffuseIrradianceCubemap = texture_cubemap_create(GL_RGB16F,
+                                                        consts::DIFFUSE_IRRADIANCE_TEXTURE_SIZE,
+                                                        consts::DIFFUSE_IRRADIANCE_TEXTURE_SIZE,
                                                         GL_FLOAT, nullptr, GL_RGB);
-    prefiltered_env_cubemap = texture_cubemap_create(GL_RGB16F, PF_ENV_SIZE, PF_ENV_SIZE, GL_FLOAT, nullptr, GL_RGB);
-    brdf_lut = texture_2d_create(GL_RG16F, BRDF_LUT_SIZE, BRDF_LUT_SIZE, GL_FLOAT, nullptr, GL_RG);
-    default_fbo_texture = texture_2d_create(GL_RGB16F, core->game_state.render_options.width,
+    m_prefilteredEnvCubemap = texture_cubemap_create(GL_RGB16F,
+                                                     consts::PREFILTERED_ENVIRONMENT_MAP_TEXTURE_SIZE,
+                                                     consts::PREFILTERED_ENVIRONMENT_MAP_TEXTURE_SIZE,
+                                                     GL_FLOAT, nullptr, GL_RGB);
+    m_brdfLut = texture_2d_create(GL_RG16F,
+                                  consts::BRDF_LUT_TEXTURE_SIZE,
+                                  consts::BRDF_LUT_TEXTURE_SIZE,
+                                  GL_FLOAT, nullptr, GL_RG);
+    m_defaultFboTexture = texture_2d_create(GL_RGB16F, core->game_state.render_options.width,
                                             core->game_state.render_options.height, GL_FLOAT, nullptr, GL_RGB);
 
-    if (!environment_map || !diffuse_irradiance_cubemap || !prefiltered_env_cubemap
-        || !brdf_lut || !default_fbo_texture) {
+    if (!m_environmentMap || !m_diffuseIrradianceCubemap || !m_prefilteredEnvCubemap
+        || !m_brdfLut || !m_defaultFboTexture) {
         core->fatal("Failed to create renderer textures");
     }
 
@@ -104,15 +77,15 @@ void Renderer::init() {
     // init fbos
     //----------
 
-    working_fbo = framebuffer_create(w, h);
-    default_fbo = framebuffer_create(core->game_state.render_options.width, core->game_state.render_options.height);
+    m_workingFbo = framebuffer_create(w, h);
+    m_defaultFbo = framebuffer_create(core->game_state.render_options.width, core->game_state.render_options.height);
 
-    if (!default_fbo.id || !working_fbo.id) {
+    if (!m_defaultFbo.id || !m_workingFbo.id) {
         core->fatal("Failed to create FBOs");
     }
 
-    framebuffer_bind(&default_fbo);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, default_fbo_texture, 0);
+    framebuffer_bind(&m_defaultFbo);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_defaultFboTexture, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     //-------------
@@ -126,18 +99,18 @@ void Renderer::init() {
 #define VERT(x) (SHADER_DIR #x ".vert")
 #define FRAG(x) (SHADER_DIR #x ".frag")
 
-    material_shader = load_shader_from_file(VERT(material), FRAG(material));
-    sky_shader = load_shader_from_file(VERT(cube), FRAG(sky));
-    diffuse_irradiance_shader = load_shader_from_file(VERT(cube), FRAG(diffuse_irradiance_convolution));
-    env_map_prefilter_shader = load_shader_from_file(VERT(cube), FRAG(env_map_prefilter));
-    brdf_lut_shader = load_shader_from_file(VERT(fullscreen), FRAG(brdf_lut));
+    m_materialShader = load_shader_from_file(VERT(material), FRAG(material));
+    m_skyShader = load_shader_from_file(VERT(cube), FRAG(sky));
+    m_diffuseIrradianceShader = load_shader_from_file(VERT(cube), FRAG(diffuse_irradiance_convolution));
+    m_envMapPrefilterShader = load_shader_from_file(VERT(cube), FRAG(env_map_prefilter));
+    m_brdfLutShader = load_shader_from_file(VERT(fullscreen), FRAG(brdf_lut));
 
 #undef FRAG
 #undef VERT
 #undef SHADER_DIR
 
-    if (!material_shader || !sky_shader || !diffuse_irradiance_shader
-        || !env_map_prefilter_shader || !brdf_lut_shader) {
+    if (!m_materialShader || !m_skyShader || !m_diffuseIrradianceShader
+        || !m_envMapPrefilterShader || !m_brdfLutShader) {
         core->fatal("Failed to create shaders");
     }
 
@@ -145,8 +118,8 @@ void Renderer::init() {
     // dummy vao
     //----------
 
-    glGenVertexArrays(1, &dummy_vao);
-    if (dummy_vao == 0) {
+    glGenVertexArrays(1, &m_dummyVao);
+    if (m_dummyVao == 0) {
         core->fatal("Failed to generate dummy VAO");
     }
 
@@ -155,7 +128,7 @@ void Renderer::init() {
     //-----------
 
     // set state for precomputations
-    framebuffer_bind(&working_fbo);
+    framebuffer_bind(&m_workingFbo);
     glDisable(GL_DEPTH_TEST);
 
     // view and projection matrices for cubemap rendering
@@ -173,62 +146,62 @@ void Renderer::init() {
     // diffuse irradiance convolution
     //-------------------------------
 
-    shader_bind(diffuse_irradiance_shader);
-    glViewport(0, 0, DIFF_IRR_SIZE, DIFF_IRR_SIZE);
+    shader_bind(m_diffuseIrradianceShader);
+    glViewport(0, 0, consts::DIFFUSE_IRRADIANCE_TEXTURE_SIZE, consts::DIFFUSE_IRRADIANCE_TEXTURE_SIZE);
 
     // set environment map uniform
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, environment_map);
-    shader_set_int(diffuse_irradiance_shader, "uEnvMap", 0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_environmentMap);
+    shader_set_int(m_diffuseIrradianceShader, "uEnvMap", 0);
 
     for (u32 face = 0; face < 6; ++face) {
         // set current face as output color attachment
-        shader_set_mat4(diffuse_irradiance_shader, "uViewProjectionMatrix", proj * views[face]);
+        shader_set_mat4(m_diffuseIrradianceShader, "uViewProjectionMatrix", proj * views[face]);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + face,
-                               diffuse_irradiance_cubemap, 0);
+                               m_diffuseIrradianceCubemap, 0);
         glClear(GL_COLOR_BUFFER_BIT);
 
         // draw cube
-        glBindVertexArray(dummy_vao);
+        glBindVertexArray(m_dummyVao);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 14);
         glBindVertexArray(0);
     }
 
     // update mipmaps for diffuse irradiance cubemap
-    glBindTexture(GL_TEXTURE_CUBE_MAP, diffuse_irradiance_cubemap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_diffuseIrradianceCubemap);
     glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
     //--------------------------
     // prefilter environment map
     //--------------------------
 
-    shader_bind(env_map_prefilter_shader);
+    shader_bind(m_envMapPrefilterShader);
 
     // set environment map uniform
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, environment_map);
-    shader_set_int(env_map_prefilter_shader, "uEnvMap", 0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_environmentMap);
+    shader_set_int(m_envMapPrefilterShader, "uEnvMap", 0);
 
     // calculate mipmap levels
-    num_prefiltered_env_mipmap_levels = floor(log2(PF_ENV_SIZE));
+    m_numPrefilteredEnvMipmapLevels = floor(log2(consts::PREFILTERED_ENVIRONMENT_MAP_TEXTURE_SIZE));
 
-    for (u32 level = 0; level <= num_prefiltered_env_mipmap_levels; ++level) {
+    for (u32 level = 0; level <= m_numPrefilteredEnvMipmapLevels; ++level) {
         // set current roughness for prefilter
-        f32 roughness = (f32) level / (f32) (num_prefiltered_env_mipmap_levels);
-        shader_set_float(env_map_prefilter_shader, "uRoughness", roughness);
+        f32 roughness = (f32) level / (f32) (m_numPrefilteredEnvMipmapLevels);
+        shader_set_float(m_envMapPrefilterShader, "uRoughness", roughness);
 
-        u32 size = PF_ENV_SIZE * pow(0.5f, level);
+        u32 size = consts::PREFILTERED_ENVIRONMENT_MAP_TEXTURE_SIZE * pow(0.5f, level);
         glViewport(0, 0, size, size);
 
         for (u32 face = 0; face < 6; ++face) {
             // set current face as output color attachment
-            shader_set_mat4(env_map_prefilter_shader, "uViewProjectionMatrix", proj * views[face]);
+            shader_set_mat4(m_envMapPrefilterShader, "uViewProjectionMatrix", proj * views[face]);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + face,
-                                   prefiltered_env_cubemap, level);
+                                   m_prefilteredEnvCubemap, level);
             glClear(GL_COLOR_BUFFER_BIT);
 
             // draw cube
-            glBindVertexArray(dummy_vao);
+            glBindVertexArray(m_dummyVao);
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 14);
             glBindVertexArray(0);
         }
@@ -238,18 +211,18 @@ void Renderer::init() {
     // brdf lut
     //---------
 
-    shader_bind(brdf_lut_shader);
-    glViewport(0, 0, BRDF_LUT_SIZE, BRDF_LUT_SIZE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdf_lut, 0);
+    shader_bind(m_brdfLutShader);
+    glViewport(0, 0, consts::BRDF_LUT_TEXTURE_SIZE, consts::BRDF_LUT_TEXTURE_SIZE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_brdfLut, 0);
     glClear(GL_COLOR_BUFFER_BIT);
 
     // draw quad
-    glBindVertexArray(dummy_vao);
+    glBindVertexArray(m_dummyVao);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     glBindVertexArray(0);
 
     // update mipmaps for brdf lut
-    glBindTexture(GL_TEXTURE_2D, brdf_lut);
+    glBindTexture(GL_TEXTURE_2D, m_brdfLut);
     glGenerateMipmap(GL_TEXTURE_2D);
 
     // set state for normal rendering
@@ -258,26 +231,26 @@ void Renderer::init() {
 }
 
 void Renderer::destroy() {
-    shader_destroy(brdf_lut_shader);
-    shader_destroy(env_map_prefilter_shader);
-    shader_destroy(diffuse_irradiance_shader);
-    shader_destroy(sky_shader);
-    shader_destroy(material_shader);
+    shader_destroy(m_brdfLutShader);
+    shader_destroy(m_envMapPrefilterShader);
+    shader_destroy(m_diffuseIrradianceShader);
+    shader_destroy(m_skyShader);
+    shader_destroy(m_materialShader);
 
-    texture_destroy(brdf_lut);
-    texture_destroy(prefiltered_env_cubemap);
-    texture_destroy(diffuse_irradiance_cubemap);
-    texture_destroy(environment_map);
-    texture_destroy(default_fbo_texture);
+    texture_destroy(m_brdfLut);
+    texture_destroy(m_prefilteredEnvCubemap);
+    texture_destroy(m_diffuseIrradianceCubemap);
+    texture_destroy(m_environmentMap);
+    texture_destroy(m_defaultFboTexture);
 
-    framebuffer_destroy(&working_fbo);
-    framebuffer_destroy(&default_fbo);
+    framebuffer_destroy(&m_workingFbo);
+    framebuffer_destroy(&m_defaultFbo);
 }
 
-void Renderer::queueRenderable (Renderable renderable) {
-    if (num_renderables_queued >= MAX_RENDERABLES_PER_FRAME) {
+void Renderer::queueRenderable(Renderable renderable) {
+    if (num_renderables_queued >= consts::MAX_RENDERABLES) {
         fprintf(stderr, "[warn] tried to queue more renderables than MAX_RENDERABLES (%d)\n",
-                MAX_RENDERABLES_PER_FRAME);
+                consts::MAX_RENDERABLES);
         return;
     }
 
@@ -305,55 +278,57 @@ void Renderer::queueRenderable (Renderable renderable) {
 
 void Renderer::render() {
     // bind default fbo
-    framebuffer_bind(&default_fbo);
+    framebuffer_bind(&m_defaultFbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // draw scene
     {
-        render_stats = {};
+        m_renderStats = {};
 
         // TODO: optimize by removing redundant binds and uniform setting
-        shader_bind(material_shader);
+        shader_bind(m_materialShader);
 
         u32 texture_idx = 0;
 
         // TODO: take tonemapping out of sky.frag and material.frag to separate pass to keep everything linear
 
         glActiveTexture(GL_TEXTURE0 + texture_idx);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, diffuse_irradiance_cubemap);
-        shader_set_int(material_shader, "uDiffuseIrradianceMap", texture_idx);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, m_diffuseIrradianceCubemap);
+        shader_set_int(m_materialShader, "uDiffuseIrradianceMap", texture_idx);
         ++texture_idx;
 
         glActiveTexture(GL_TEXTURE0 + texture_idx);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, prefiltered_env_cubemap);
-        shader_set_int(material_shader, "uPrefilteredEnvironmentMap", texture_idx);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, m_prefilteredEnvCubemap);
+        shader_set_int(m_materialShader, "uPrefilteredEnvironmentMap", texture_idx);
         ++texture_idx;
 
-        shader_set_int(material_shader, "uNumPrefilteredEnvMipmapLevels", num_prefiltered_env_mipmap_levels);
+        shader_set_int(m_materialShader, "uNumPrefilteredEnvMipmapLevels", m_numPrefilteredEnvMipmapLevels);
 
         glActiveTexture(GL_TEXTURE0 + texture_idx);
-        glBindTexture(GL_TEXTURE_2D, brdf_lut);
-        shader_set_int(material_shader, "uBrdfLut", texture_idx);
+        glBindTexture(GL_TEXTURE_2D, m_brdfLut);
+        shader_set_int(m_materialShader, "uBrdfLut", texture_idx);
         ++texture_idx;
 
         // sun
-        shader_set_vec3(material_shader, "uSunDirection", core->game_state.sun_direction);
+        shader_set_vec3(m_materialShader, "uSunDirection", core->game_state.sun_direction);
 
         // camera
         f32 aspect_ratio = (f32) core->game_state.render_options.width / core->game_state.render_options.height;
-        glm::mat4 view_matrix = glm::lookAt(core->game_state.camera.position, core->game_state.camera.look_at, glm::vec3(0, 1, 0));
-        glm::mat4 projection_matrix = glm::perspective(core->game_state.camera.fov_radians, aspect_ratio, 0.001f, 1000.0f);
+        glm::mat4 view_matrix = glm::lookAt(core->game_state.camera.position, core->game_state.camera.look_at,
+                                            glm::vec3(0, 1, 0));
+        glm::mat4 projection_matrix = glm::perspective(core->game_state.camera.fov_radians, aspect_ratio, 0.001f,
+                                                       1000.0f);
         glm::mat4 view_projection_matrix = projection_matrix * view_matrix;
-        shader_set_mat4(material_shader, "uViewProjectionMatrix", view_projection_matrix);
-        shader_set_vec3(material_shader, "uCameraPosition", core->game_state.camera.position);
+        shader_set_mat4(m_materialShader, "uViewProjectionMatrix", view_projection_matrix);
+        shader_set_vec3(m_materialShader, "uCameraPosition", core->game_state.camera.position);
 
         // render renderables
         for (u32 i = 0; i < num_renderables_queued; ++i) {
             Renderable *current = &renderables[i];
 
             glm::mat4 model_matrix = transform_to_matrix(&current->transform);
-            shader_set_mat4(material_shader, "uModelMatrix", model_matrix);
-            shader_set_mat4(material_shader, "uNormalMatrix", glm::transpose(glm::inverse(model_matrix)));
+            shader_set_mat4(m_materialShader, "uModelMatrix", model_matrix);
+            shader_set_mat4(m_materialShader, "uNormalMatrix", glm::transpose(glm::inverse(model_matrix)));
 
             // render each mesh in model
             for (u32 m = 0; m < current->model->num_meshes; ++m) {
@@ -362,31 +337,31 @@ void Renderer::render() {
 
                 glActiveTexture(GL_TEXTURE0 + texture_idx);
                 glBindTexture(GL_TEXTURE_2D, material->albedo_texture);
-                shader_set_int(material_shader, "uMaterial.albedo", texture_idx);
+                shader_set_int(m_materialShader, "uMaterial.albedo", texture_idx);
                 ++texture_idx;
 
                 glActiveTexture(GL_TEXTURE0 + texture_idx);
                 glBindTexture(GL_TEXTURE_2D, material->normal_texture);
-                shader_set_int(material_shader, "uMaterial.normal", texture_idx);
+                shader_set_int(m_materialShader, "uMaterial.normal", texture_idx);
                 ++texture_idx;
 
                 glActiveTexture(GL_TEXTURE0 + texture_idx);
                 glBindTexture(GL_TEXTURE_2D, material->metallic_texture);
-                shader_set_int(material_shader, "uMaterial.metallic", texture_idx);
-                shader_set_float(material_shader, "uMaterial.metallic_scale", material->metallic_scale);
+                shader_set_int(m_materialShader, "uMaterial.metallic", texture_idx);
+                shader_set_float(m_materialShader, "uMaterial.metallic_scale", material->metallic_scale);
                 ++texture_idx;
 
                 glActiveTexture(GL_TEXTURE0 + texture_idx);
                 glBindTexture(GL_TEXTURE_2D, material->roughness_texture);
-                shader_set_int(material_shader, "uMaterial.roughness", texture_idx);
-                shader_set_float(material_shader, "uMaterial.roughness_scale", material->roughness_scale);
+                shader_set_int(m_materialShader, "uMaterial.roughness", texture_idx);
+                shader_set_float(m_materialShader, "uMaterial.roughness_scale", material->roughness_scale);
                 ++texture_idx;
 
                 glBindVertexArray(mesh->vao);
                 glDrawArrays(GL_TRIANGLES, 0, mesh->num_vertices);
 
-                ++render_stats.draw_calls;
-                render_stats.vertices_rendered += mesh->num_vertices;
+                ++m_renderStats.draw_calls;
+                m_renderStats.vertices_rendered += mesh->num_vertices;
             }
         }
 
@@ -399,20 +374,20 @@ void Renderer::render() {
         glDepthFunc(GL_LEQUAL);
         glDepthMask(GL_FALSE);
 
-        shader_bind(sky_shader);
+        shader_bind(m_skyShader);
 
         f32 aspect_ratio = core->game_state.render_options.width / (f32) core->game_state.render_options.height;
 
-        shader_set_mat4(sky_shader, "uViewProjectionMatrix",
+        shader_set_mat4(m_skyShader, "uViewProjectionMatrix",
                         glm::perspective(core->game_state.camera.fov_radians, aspect_ratio, 0.01f, 10.0f) *
                         glm::lookAt(glm::vec3(0), core->game_state.camera.look_at - core->game_state.camera.position,
                                     glm::vec3(0, 1, 0)));
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, environment_map);
-        shader_set_int(sky_shader, "uEnvMap", 0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, m_environmentMap);
+        shader_set_int(m_skyShader, "uEnvMap", 0);
 
-        glBindVertexArray(dummy_vao);
+        glBindVertexArray(m_dummyVao);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 14);
         glBindVertexArray(0);
 
@@ -421,9 +396,9 @@ void Renderer::render() {
     }
 
     // blit to default framebuffer
-    framebuffer_blit_to_default_framebuffer(&default_fbo, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+    framebuffer_blit_to_default_framebuffer(&m_defaultFbo, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 }
 
 RenderStats Renderer::getStats() {
-    return render_stats;
+    return m_renderStats;
 }
