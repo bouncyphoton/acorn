@@ -331,37 +331,34 @@ void Renderer::render() {
             shader_set_mat4(m_materialShader, "uNormalMatrix", glm::transpose(glm::inverse(model_matrix)));
 
             // render each mesh in model
-            for (u32 m = 0; m < current->model->num_meshes; ++m) {
-                Material *material = &current->model->materials[m];
-                Mesh *mesh = &current->model->meshes[m];
-
+            for (auto &mesh : current->model->meshes) {
                 glActiveTexture(GL_TEXTURE0 + texture_idx);
-                glBindTexture(GL_TEXTURE_2D, material->albedo_texture);
+                glBindTexture(GL_TEXTURE_2D, mesh.material.albedo_texture);
                 shader_set_int(m_materialShader, "uMaterial.albedo", texture_idx);
                 ++texture_idx;
 
                 glActiveTexture(GL_TEXTURE0 + texture_idx);
-                glBindTexture(GL_TEXTURE_2D, material->normal_texture);
+                glBindTexture(GL_TEXTURE_2D, mesh.material.normal_texture);
                 shader_set_int(m_materialShader, "uMaterial.normal", texture_idx);
                 ++texture_idx;
 
                 glActiveTexture(GL_TEXTURE0 + texture_idx);
-                glBindTexture(GL_TEXTURE_2D, material->metallic_texture);
+                glBindTexture(GL_TEXTURE_2D, mesh.material.metallic_texture);
                 shader_set_int(m_materialShader, "uMaterial.metallic", texture_idx);
-                shader_set_float(m_materialShader, "uMaterial.metallic_scale", material->metallic_scale);
+                shader_set_float(m_materialShader, "uMaterial.metallic_scale", mesh.material.metallic_scale);
                 ++texture_idx;
 
                 glActiveTexture(GL_TEXTURE0 + texture_idx);
-                glBindTexture(GL_TEXTURE_2D, material->roughness_texture);
+                glBindTexture(GL_TEXTURE_2D, mesh.material.roughness_texture);
                 shader_set_int(m_materialShader, "uMaterial.roughness", texture_idx);
-                shader_set_float(m_materialShader, "uMaterial.roughness_scale", material->roughness_scale);
+                shader_set_float(m_materialShader, "uMaterial.roughness_scale", mesh.material.roughness_scale);
                 ++texture_idx;
 
-                glBindVertexArray(mesh->vao);
-                glDrawArrays(GL_TRIANGLES, 0, mesh->num_vertices);
+                glBindVertexArray(mesh.vao);
+                glDrawArrays(GL_TRIANGLES, 0, mesh.vertices.size());
 
                 ++m_renderStats.draw_calls;
-                m_renderStats.vertices_rendered += mesh->num_vertices;
+                m_renderStats.vertices_rendered += mesh.vertices.size();
             }
         }
 

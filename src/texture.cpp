@@ -1,11 +1,11 @@
 #include "texture.h"
 
+#include <GL/gl3w.h>
+#include <unordered_map>
+
 #define STB_IMAGE_IMPLEMENTATION
 
 #include <stb_image.h>
-
-#include <GL/gl3w.h>
-#include <unordered_map>
 
 static std::unordered_map<std::string, u32> texture_map;
 static u32 texture_black = 0;

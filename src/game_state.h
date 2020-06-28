@@ -2,6 +2,7 @@
 #define ACORN_GAME_STATE_H
 
 #include "types.h"
+#include "scene.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 
@@ -21,6 +22,7 @@ struct Camera {
 struct GameState {
     RenderOptions render_options = {};
     Camera camera = {};
+    Scene scene = {};
 
     // unit vector pointing towards the sun
     glm::vec3 sun_direction = glm::vec3(0, 1, 0);

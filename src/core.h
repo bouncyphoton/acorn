@@ -4,6 +4,7 @@
 #include "game_state.h"
 #include "platform.h"
 #include "renderer.h"
+#include "resource_manager.h"
 #include <string>
 
 class Core {
@@ -32,6 +33,7 @@ private:
 
     Platform m_platform;
     Renderer m_renderer;
+    ResourceManager m_resourceManager;
 };
 
 extern Core *core;

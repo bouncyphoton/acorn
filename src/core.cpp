@@ -3,10 +3,6 @@
 #include "texture.h"
 #include <iostream>
 
-#define NUM_MODELS 3
-// TODO: move data, preferably to a memory arena
-static Model models[NUM_MODELS] = {};
-
 static Core core_local;
 Core *core = &core_local;
 
@@ -28,9 +24,9 @@ void Core::run() {
                 game_state.camera.look_at = glm::vec3(0, 0, 0);
             }
 
-            Model *spheres = &models[0];
-            Model *rifle = &models[1];
-            Model *rock = &models[2];
+            Model *spheres = m_resourceManager.getModel("../assets/spheres/spheres.obj");
+            Model *rifle = m_resourceManager.getModel("../assets/stylized-rifle/Stylized_rifle_final.obj");
+            Model *rock = m_resourceManager.getModel("../assets/rock03/3DRock003_16K.obj");
 
             m_renderer.queueRenderable(Renderable{
                     Transform{
@@ -106,22 +102,19 @@ void Core::init() {
 
     m_platform.init();
     m_renderer.init();
+    m_resourceManager.init();
     if (!textures_init()) core->fatal("Failed to init textures");
 //    if (!debug_gui_init()) return false;
 
-    // TODO: remove temp model loading
-    models[0] = model_load_from_obj("../assets/spheres/spheres.obj", "../assets/spheres");
-    models[1] = model_load_from_obj("../assets/stylized-rifle/Stylized_rifle_final.obj", "../assets/stylized-rifle");
-    models[2] = model_load_from_obj("../assets/rock03/3DRock003_16K.obj", "../assets/rock03");
+//    game_state.scene.addModel("../assets/spheres/spheres.obj");
+//    game_state.scene.addModel("../assets/stylized-rifle/Stylized_rifle_final.obj");
+//    game_state.scene.addModel("../assets/rock03/3DRock003_16K.obj");
 }
 
 void Core::cleanup() {
-    for (u32 i = 0; i < NUM_MODELS; ++i) {
-        model_free(&models[i]);
-    }
-
 //    debug_gui_shutdown();
     textures_shutdown();
+    m_resourceManager.destroy();
     m_renderer.destroy();
     m_platform.destroy();
 }
