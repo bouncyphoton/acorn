@@ -13,6 +13,38 @@ void Core::run() {
 
     info("Initialized successfully");
 
+    Model *sphereModel = resourceManager.getModel("../assets/spheres/spheres.obj");
+    Model *rifleModel = resourceManager.getModel("../assets/stylized-rifle/Stylized_rifle_final.obj");
+    Model *rockModel = resourceManager.getModel("../assets/rock03/3DRock003_16K.obj");
+
+    Entity sphereEntity = {
+            sphereModel,
+            Transform{
+                    glm::vec3(0, 0.15, 0),
+                    glm::identity<glm::quat>(),
+                    glm::vec3(1.0f)
+            }};
+
+    Entity rifleEntity = {
+            rifleModel,
+            Transform{
+                    glm::vec3(0, -0.45, -0.35),
+                    glm::vec3(0, glm::half_pi<f32>(), 0),
+                    glm::vec3(0.01f)
+            }};
+
+    Entity rockEntity = {
+            rockModel,
+            Transform{
+                    glm::vec3(0, -0.45, 0.35),
+                    glm::vec3(0, glm::half_pi<f32>(), 0),
+                    glm::vec3(1.0f)
+            }};
+
+    entityHandle_t sphereId = game_state.scene.addEntity(sphereEntity);
+    entityHandle_t rifleId = game_state.scene.addEntity(rifleEntity);
+    entityHandle_t rockId = game_state.scene.addEntity(rockEntity);
+
     while (true) {
         m_platform.update();
 
@@ -23,6 +55,10 @@ void Core::run() {
                 game_state.camera.position = glm::vec3(cos(t) * 2, 0, sin(t) * 2);
                 game_state.camera.look_at = glm::vec3(0, 0, 0);
             }
+
+            // Make spheres float up and down
+//            sphereEntity.transform.position.y = 0.15 + sinf(glfwGetTime());
+//            game_state.scene.updateEntity(sphereId, sphereEntity);
 
             Model *spheres = resourceManager.getModel("../assets/spheres/spheres.obj");
             Model *rifle = resourceManager.getModel("../assets/stylized-rifle/Stylized_rifle_final.obj");
@@ -104,10 +140,6 @@ void Core::init() {
     m_renderer.init();
     resourceManager.init();
 //    if (!debug_gui_init()) return false;
-
-//    game_state.scene.addModel("../assets/spheres/spheres.obj");
-//    game_state.scene.addModel("../assets/stylized-rifle/Stylized_rifle_final.obj");
-//    game_state.scene.addModel("../assets/rock03/3DRock003_16K.obj");
 }
 
 void Core::cleanup() {
