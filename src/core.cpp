@@ -24,9 +24,9 @@ void Core::run() {
                 game_state.camera.look_at = glm::vec3(0, 0, 0);
             }
 
-            Model *spheres = m_resourceManager.getModel("../assets/spheres/spheres.obj");
-            Model *rifle = m_resourceManager.getModel("../assets/stylized-rifle/Stylized_rifle_final.obj");
-            Model *rock = m_resourceManager.getModel("../assets/rock03/3DRock003_16K.obj");
+            Model *spheres = resourceManager.getModel("../assets/spheres/spheres.obj");
+            Model *rifle = resourceManager.getModel("../assets/stylized-rifle/Stylized_rifle_final.obj");
+            Model *rock = resourceManager.getModel("../assets/rock03/3DRock003_16K.obj");
 
             m_renderer.queueRenderable(Renderable{
                     Transform{
@@ -102,7 +102,7 @@ void Core::init() {
 
     m_platform.init();
     m_renderer.init();
-    m_resourceManager.init();
+    resourceManager.init();
     if (!textures_init()) core->fatal("Failed to init textures");
 //    if (!debug_gui_init()) return false;
 
@@ -114,7 +114,7 @@ void Core::init() {
 void Core::cleanup() {
 //    debug_gui_shutdown();
     textures_shutdown();
-    m_resourceManager.destroy();
+    resourceManager.destroy();
     m_renderer.destroy();
     m_platform.destroy();
 }

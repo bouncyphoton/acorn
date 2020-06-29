@@ -1,9 +1,11 @@
 #include "texture.h"
+#include "core.h"
 
 #include <GL/gl3w.h>
 #include <unordered_map>
 
 #define STB_IMAGE_IMPLEMENTATION
+#define STBI_FAILURE_USERMSG
 
 #include <stb_image.h>
 
@@ -12,6 +14,44 @@ static u32 texture_black = 0;
 static u32 texture_white = 0;
 static u32 texture_missing = 0;
 static u32 texture_normal = 0;
+
+void Texture::init(const std::string &path) {
+    // TODO: read from some sort of asset metadata file
+    // would contain: data format (RGBA, etc.), texture format (2d, cubemap, etc.), is hdr, etc.
+
+    // load image data from file
+    s32 width, height, channels;
+    u8 *data = stbi_load(path.c_str(), &width, &height, &channels, 4);
+    if (!data) {
+        core->fatal("Failed to load image '" + path + "'\n" + stbi_failure_reason());
+    }
+
+    // init w/ data
+    init(GL_RGBA, width, height, GL_UNSIGNED_BYTE, data, GL_RGBA);
+
+    // free image data
+    stbi_image_free(data);
+}
+
+void Texture::init(GLenum texture_format, s32 width, s32 height, GLenum data_type, u8 *data, GLenum data_format) {
+    s32 previously_bound;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &previously_bound);
+
+    glGenTextures(1, &id);
+    glBindTexture(GL_TEXTURE_2D, id);
+    glTexImage2D(GL_TEXTURE_2D, 0, texture_format, width, height, 0, data_format, data_type, data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    glBindTexture(GL_TEXTURE_2D, previously_bound);
+}
+
+void Texture::destroy() {
+    glDeleteTextures(1, &id);
+}
 
 u32 texture_2d_create(GLenum texture_format, s32 width, s32 height, GLenum data_type, u8 *data, GLenum data_format) {
     s32 previously_bound;

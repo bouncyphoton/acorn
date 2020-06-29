@@ -241,10 +241,46 @@ void Model::init(const std::string &path) {
 
     // Set materials
     for (u32 i = 0; i < numMeshes; ++i) {
-        meshes[i].material.metallic_scale = materials[i].metallic;
-        meshes[i].material.roughness_scale = materials[i].roughness;
+        // Diffuse texture
+        if (!materials[i].diffuse_texname.empty()) {
+            meshes[i].material.albedo_texture = core->resourceManager.getTexture(
+                    dir + "/" + materials[i].diffuse_texname)->id;
+        } else {
+            meshes[i].material.albedo_texture = core->resourceManager.getBuiltInTexture(
+                    BuiltInTextureEnum::MISSING)->id;
+        }
 
-        // TODO: textures
+        // Normal texture
+        if (!materials[i].normal_texname.empty()) {
+            meshes[i].material.normal_texture = core->resourceManager.getTexture(
+                    dir + "/" + materials[i].normal_texname)->id;
+        } else if (!materials[i].bump_texname.empty()) {
+            meshes[i].material.normal_texture = core->resourceManager.getTexture(
+                    dir + "/" + materials[i].bump_texname)->id;
+        } {
+            meshes[i].material.normal_texture = core->resourceManager.getBuiltInTexture(
+                    BuiltInTextureEnum::NORMAL)->id;
+        }
+
+        // Metallic texture
+        if (!materials[i].metallic_texname.empty()) {
+            meshes[i].material.metallic_texture = core->resourceManager.getTexture(
+                    dir + "/" + materials[i].metallic_texname)->id;
+        } else {
+            meshes[i].material.metallic_texture = core->resourceManager.getBuiltInTexture(
+                    BuiltInTextureEnum::WHITE)->id;
+        }
+        meshes[i].material.metallic_scale = materials[i].metallic;
+
+        // Roughness texture
+        if (!materials[i].roughness_texname.empty()) {
+            meshes[i].material.roughness_texture = core->resourceManager.getTexture(
+                    dir + "/" + materials[i].roughness_texname)->id;
+        } else {
+            meshes[i].material.roughness_texture = core->resourceManager.getBuiltInTexture(
+                    BuiltInTextureEnum::WHITE)->id;
+        }
+        meshes[i].material.roughness_scale = materials[i].roughness;
     }
 
     for (auto &shape : shapes) {
@@ -267,20 +303,18 @@ void Model::init(const std::string &path) {
                 vertices.emplace_back();
 
                 // set position
-                vertices.back().position = glm::vec4(
+                vertices.back().position = glm::vec3(
                         attrib.vertices[3 * idx.vertex_index + 0],
                         attrib.vertices[3 * idx.vertex_index + 1],
-                        attrib.vertices[3 * idx.vertex_index + 2],
-                        0
+                        attrib.vertices[3 * idx.vertex_index + 2]
                 );
 
                 // set normal
                 if (hasNormals) {
-                    vertices.back().normal = glm::vec4(
+                    vertices.back().normal = glm::vec3(
                             attrib.normals[3 * idx.normal_index + 0],
                             attrib.normals[3 * idx.normal_index + 1],
-                            attrib.normals[3 * idx.normal_index + 2],
-                            0
+                            attrib.normals[3 * idx.normal_index + 2]
                     );
                 }
 
@@ -302,7 +336,7 @@ void Model::init(const std::string &path) {
                 glm::vec3 u = v2.position - v1.position;
                 glm::vec3 v = v3.position - v1.position;
 
-                glm::vec4 normal = glm::vec4(glm::cross(u, v), 0);
+                glm::vec3 normal = glm::vec3(glm::cross(u, v));
 
                 v1.normal = normal;
                 v2.normal = normal;
@@ -332,8 +366,14 @@ void Model::init(const std::string &path) {
         }
     }
 
-    for (auto &mesh : meshes) {
-        mesh.init();
+    for (u32 i = 0; i < meshes.size();) {
+        // Remove meshes with no vertices
+        if (meshes[i].vertices.empty()) {
+            meshes.erase(meshes.begin() + i);
+        } else {
+            meshes[i].init();
+            ++i;
+        }
     }
 }
 

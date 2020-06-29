@@ -5,7 +5,8 @@
 #include <string>
 #include <vector>
 
-struct Model {
+class Model {
+public:
     void init(const std::string &path);
 
     void destroy();

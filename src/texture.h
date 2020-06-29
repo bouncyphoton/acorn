@@ -3,12 +3,27 @@
 
 #include "types.h"
 #include <GL/gl3w.h>
+#include <string>
 
 enum class BuiltInTextureEnum {
     MISSING, BLACK, WHITE, NORMAL
 };
 
-// TODO: fixup texture creation
+class Texture {
+public:
+    /// Init a texture from a file
+    void init(const std::string &path);
+
+    /// Init a 2D texture with data
+    void init(GLenum texture_format, s32 width, s32 height, GLenum data_type, u8 *data, GLenum data_format);
+
+    /// Clean up
+    void destroy();
+
+    u32 id;
+};
+
+// TODO: finish restyling texture stuff
 
 u32 texture_2d_create(GLenum texture_format, s32 width, s32 height, GLenum data_type, u8 *data, GLenum data_format);
 

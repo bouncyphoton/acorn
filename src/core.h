@@ -25,6 +25,7 @@ public:
     [[noreturn]] void fatal(const std::string &msg);
 
     GameState game_state;
+    ResourceManager resourceManager;
 
 private:
     void init();
@@ -33,7 +34,6 @@ private:
 
     Platform m_platform;
     Renderer m_renderer;
-    ResourceManager m_resourceManager;
 };
 
 extern Core *core;
