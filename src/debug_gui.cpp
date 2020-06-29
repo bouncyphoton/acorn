@@ -8,7 +8,7 @@
 #include <GLFW/glfw3.h>
 
 void DebugGui::init() {
-    const char *glsl_version = "#version 330 core";
+    const char *glslVersion = "#version 330 core";
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -16,7 +16,7 @@ void DebugGui::init() {
     ImGui::StyleColorsDark();
 
     ImGui_ImplGlfw_InitForOpenGL(core->platform.getGlfwWindow(), true);
-    ImGui_ImplOpenGL3_Init(glsl_version);
+    ImGui_ImplOpenGL3_Init(glslVersion);
 }
 
 void DebugGui::destroy() {
@@ -50,10 +50,10 @@ void DebugGui::draw() {
         ImGui::Separator();
 
         ImGui::Text("Camera");
-        ImGui::Checkbox("orbit", &core->game_state.camera.is_orbiting);
-        ImGui::SliderFloat("fov", &core->game_state.camera.fov_radians, 0.0f, glm::pi<f32>());
-        ImGui::DragFloat3("position", &core->game_state.camera.position[0], 0.1f);
-        ImGui::DragFloat3("look at", &core->game_state.camera.look_at[0], 0.1f);
+        ImGui::Checkbox("orbit", &core->gameState.camera.isOrbiting);
+        ImGui::SliderFloat("fov", &core->gameState.camera.fovRadians, 0.0f, glm::pi<f32>());
+        ImGui::DragFloat3("position", &core->gameState.camera.position[0], 0.1f);
+        ImGui::DragFloat3("look at", &core->gameState.camera.lookAt[0], 0.1f);
     }
     ImGui::End();
 
@@ -62,6 +62,6 @@ void DebugGui::draw() {
     //----------
 
     ImGui::Render();
-    glViewport(0, 0, core->game_state.render_options.width, core->game_state.render_options.height);
+    glViewport(0, 0, core->gameState.renderOptions.width, core->gameState.renderOptions.height);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }

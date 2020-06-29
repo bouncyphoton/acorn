@@ -17,7 +17,7 @@ public:
     void init(const std::string &path);
 
     /// Init a 2D texture with data
-    void init2d(GLenum texture_format, s32 width, s32 height, GLenum data_type, u8 *data, GLenum data_format);
+    void init2D(GLenum texture_format, s32 width, s32 height, GLenum data_type, u8 *data, GLenum data_format);
 
     /// Init a cubemap texture with data
     void initCubemap(GLenum texture_format, s32 width, s32 height, GLenum data_type, void **data, GLenum data_format);

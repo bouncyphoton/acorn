@@ -1,6 +1,4 @@
 #include "core.h"
-#include "model.h"
-#include "texture.h"
 #include <iostream>
 
 static Core core_local;
@@ -37,24 +35,24 @@ void Core::run() {
                     glm::vec3(1.0f)
             }};
 
-    entityHandle_t sphereHandle = game_state.scene.addEntity(sphereEntity);
-    entityHandle_t rifleHandle = game_state.scene.addEntity(rifleEntity);
-    entityHandle_t rockHandle = game_state.scene.addEntity(rockEntity);
+    entityHandle_t sphereHandle = gameState.scene.addEntity(sphereEntity);
+    entityHandle_t rifleHandle = gameState.scene.addEntity(rifleEntity);
+    entityHandle_t rockHandle = gameState.scene.addEntity(rockEntity);
 
     while (true) {
         platform.update();
 
         // TODO: remove temporary update
         {
-            if (game_state.camera.is_orbiting) {
+            if (gameState.camera.isOrbiting) {
                 f32 t = glfwGetTime() * 0.25f;
-                game_state.camera.position = glm::vec3(cos(t) * 2, 0, sin(t) * 2);
-                game_state.camera.look_at = glm::vec3(0, 0, 0);
+                gameState.camera.position = glm::vec3(cos(t) * 2, 0, sin(t) * 2);
+                gameState.camera.lookAt = glm::vec3(0, 0, 0);
             }
 
             // Make spheres float up and down
             sphereEntity.transform.position.y = 0.15 + sinf(glfwGetTime()) * 0.05;
-            game_state.scene.updateEntity(sphereHandle, sphereEntity);
+            gameState.scene.updateEntity(sphereHandle, sphereEntity);
         }
 
         // draw frame
@@ -85,12 +83,12 @@ void Core::fatal(const std::string &msg) {
 }
 
 void Core::init() {
-    game_state.render_options.width = 1024;
-    game_state.render_options.height = 768;
-    game_state.camera.position = glm::vec3(1, 0, 0);
-    game_state.camera.look_at = glm::vec3(0, 0, -1);
-    game_state.camera.fov_radians = glm::quarter_pi<f32>();
-    game_state.sun_direction = glm::normalize(glm::vec3(-1, 1, 1));
+    gameState.renderOptions.width = 1024;
+    gameState.renderOptions.height = 768;
+    gameState.camera.position = glm::vec3(1, 0, 0);
+    gameState.camera.lookAt = glm::vec3(0, 0, -1);
+    gameState.camera.fovRadians = glm::quarter_pi<f32>();
+    gameState.sunDirection = glm::normalize(glm::vec3(-1, 1, 1));
 
     platform.init();
     renderer.init();

@@ -23,15 +23,15 @@ void Texture::init(const std::string &path) {
     }
 
     // init w/ data
-    init2d(textureFormat, width, height, GL_UNSIGNED_BYTE, data, dataFormat);
+    init2D(textureFormat, width, height, GL_UNSIGNED_BYTE, data, dataFormat);
 
     // free image data
     stbi_image_free(data);
 }
 
-void Texture::init2d(GLenum texture_format, s32 width, s32 height, GLenum data_type, u8 *data, GLenum data_format) {
-    s32 previously_bound;
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, &previously_bound);
+void Texture::init2D(GLenum texture_format, s32 width, s32 height, GLenum data_type, u8 *data, GLenum data_format) {
+    s32 previouslyBound;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &previouslyBound);
 
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_2D, id);
@@ -42,12 +42,13 @@ void Texture::init2d(GLenum texture_format, s32 width, s32 height, GLenum data_t
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glGenerateMipmap(GL_TEXTURE_2D);
 
-    glBindTexture(GL_TEXTURE_2D, previously_bound);
+    glBindTexture(GL_TEXTURE_2D, previouslyBound);
 }
 
-void Texture::initCubemap(GLenum texture_format, s32 width, s32 height, GLenum data_type, void **data, GLenum data_format) {
-    s32 previously_bound;
-    glGetIntegerv(GL_TEXTURE_BINDING_CUBE_MAP, &previously_bound);
+void Texture::initCubemap(GLenum texture_format, s32 width, s32 height, GLenum data_type,
+                          void **data, GLenum data_format) {
+    s32 previouslyBound;
+    glGetIntegerv(GL_TEXTURE_BINDING_CUBE_MAP, &previouslyBound);
 
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_CUBE_MAP, id);
@@ -62,7 +63,7 @@ void Texture::initCubemap(GLenum texture_format, s32 width, s32 height, GLenum d
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
-    glBindTexture(GL_TEXTURE_CUBE_MAP, previously_bound);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, previouslyBound);
 }
 
 void Texture::destroy() {

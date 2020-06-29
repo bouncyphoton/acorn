@@ -1,9 +1,7 @@
 #include "renderer.h"
 #include "types.h"
-#include "framebuffer.h"
 #include "shader.h"
 #include "utils.h"
-#include "texture.h"
 #include "core.h"
 #include "constants.h"
 #include <stb_image.h>
@@ -54,26 +52,26 @@ void Renderer::init() {
     }
 
     m_diffuseIrradianceCubemap.initCubemap(GL_RGB16F,
-                                    consts::DIFFUSE_IRRADIANCE_TEXTURE_SIZE,
-                                    consts::DIFFUSE_IRRADIANCE_TEXTURE_SIZE,
-                                    GL_FLOAT, nullptr, GL_RGB);
+                                           consts::DIFFUSE_IRRADIANCE_TEXTURE_SIZE,
+                                           consts::DIFFUSE_IRRADIANCE_TEXTURE_SIZE,
+                                           GL_FLOAT, nullptr, GL_RGB);
     m_prefilteredEnvCubemap.initCubemap(GL_RGB16F,
-                                 consts::PREFILTERED_ENVIRONMENT_MAP_TEXTURE_SIZE,
-                                 consts::PREFILTERED_ENVIRONMENT_MAP_TEXTURE_SIZE,
-                                 GL_FLOAT, nullptr, GL_RGB);
-    m_brdfLut.init2d(GL_RG16F,
-                   consts::BRDF_LUT_TEXTURE_SIZE,
-                   consts::BRDF_LUT_TEXTURE_SIZE,
-                   GL_FLOAT, nullptr, GL_RG);
-    m_defaultFboTexture.init2d(GL_RGB16F, core->game_state.render_options.width,
-                                            core->game_state.render_options.height, GL_FLOAT, nullptr, GL_RGB);
+                                        consts::PREFILTERED_ENVIRONMENT_MAP_TEXTURE_SIZE,
+                                        consts::PREFILTERED_ENVIRONMENT_MAP_TEXTURE_SIZE,
+                                        GL_FLOAT, nullptr, GL_RGB);
+    m_brdfLut.init2D(GL_RG16F,
+                     consts::BRDF_LUT_TEXTURE_SIZE,
+                     consts::BRDF_LUT_TEXTURE_SIZE,
+                     GL_FLOAT, nullptr, GL_RG);
+    m_defaultFboTexture.init2D(GL_RGB16F, core->gameState.renderOptions.width,
+                               core->gameState.renderOptions.height, GL_FLOAT, nullptr, GL_RGB);
 
     //----------
     // init fbos
     //----------
 
     m_workingFbo.init(w, h);
-    m_defaultFbo.init(core->game_state.render_options.width, core->game_state.render_options.height);
+    m_defaultFbo.init(core->gameState.renderOptions.width, core->gameState.renderOptions.height);
 
     if (!m_defaultFbo.id || !m_workingFbo.id) {
         core->fatal("Failed to create FBOs");
@@ -264,48 +262,48 @@ void Renderer::render() {
         ++texture_idx;
 
         // sun
-        m_materialShader.setVec3("uSunDirection", core->game_state.sun_direction);
+        m_materialShader.setVec3("uSunDirection", core->gameState.sunDirection);
 
         // camera
-        f32 aspect_ratio = (f32) core->game_state.render_options.width / core->game_state.render_options.height;
-        glm::mat4 view_matrix = glm::lookAt(core->game_state.camera.position, core->game_state.camera.look_at,
-                                            glm::vec3(0, 1, 0));
-        glm::mat4 projection_matrix = glm::perspective(core->game_state.camera.fov_radians, aspect_ratio, 0.001f,
-                                                       1000.0f);
-        glm::mat4 view_projection_matrix = projection_matrix * view_matrix;
-        m_materialShader.setMat4("uViewProjectionMatrix", view_projection_matrix);
-        m_materialShader.setVec3("uCameraPosition", core->game_state.camera.position);
+        f32 aspectRatio = (f32) core->gameState.renderOptions.width / core->gameState.renderOptions.height;
+        glm::mat4 viewMatrix = glm::lookAt(core->gameState.camera.position, core->gameState.camera.lookAt,
+                                           glm::vec3(0, 1, 0));
+        glm::mat4 projectionMatrix = glm::perspective(core->gameState.camera.fovRadians, aspectRatio, 0.001f,
+                                                      1000.0f);
+        glm::mat4 viewProjectionMatrix = projectionMatrix * viewMatrix;
+        m_materialShader.setMat4("uViewProjectionMatrix", viewProjectionMatrix);
+        m_materialShader.setVec3("uCameraPosition", core->gameState.camera.position);
 
         // render entities
-        for (const Entity &entity : core->game_state.scene.getEntities()) {
+        for (const Entity &entity : core->gameState.scene.getEntities()) {
             if (!entity.active) continue;
 
-            glm::mat4 model_matrix = transform_to_matrix(entity.transform);
-            m_materialShader.setMat4("uModelMatrix", model_matrix);
-            m_materialShader.setMat4("uNormalMatrix", glm::transpose(glm::inverse(model_matrix)));
+            glm::mat4 modelMatrix = transform_to_matrix(entity.transform);
+            m_materialShader.setMat4("uModelMatrix", modelMatrix);
+            m_materialShader.setMat4("uNormalMatrix", glm::transpose(glm::inverse(modelMatrix)));
 
             // render each mesh in model
             for (auto &mesh : entity.model->meshes) {
                 glActiveTexture(GL_TEXTURE0 + texture_idx);
-                glBindTexture(GL_TEXTURE_2D, mesh.material.albedo_texture);
+                glBindTexture(GL_TEXTURE_2D, mesh.material.albedoTexture);
                 m_materialShader.setInt("uMaterial.albedo", texture_idx);
                 ++texture_idx;
 
                 glActiveTexture(GL_TEXTURE0 + texture_idx);
-                glBindTexture(GL_TEXTURE_2D, mesh.material.normal_texture);
+                glBindTexture(GL_TEXTURE_2D, mesh.material.normalTexture);
                 m_materialShader.setInt("uMaterial.normal", texture_idx);
                 ++texture_idx;
 
                 glActiveTexture(GL_TEXTURE0 + texture_idx);
-                glBindTexture(GL_TEXTURE_2D, mesh.material.metallic_texture);
+                glBindTexture(GL_TEXTURE_2D, mesh.material.metallicTexture);
                 m_materialShader.setInt("uMaterial.metallic", texture_idx);
-                m_materialShader.setFloat("uMaterial.metallic_scale", mesh.material.metallic_scale);
+                m_materialShader.setFloat("uMaterial.metallic_scale", mesh.material.metallicScale);
                 ++texture_idx;
 
                 glActiveTexture(GL_TEXTURE0 + texture_idx);
-                glBindTexture(GL_TEXTURE_2D, mesh.material.roughness_texture);
+                glBindTexture(GL_TEXTURE_2D, mesh.material.roughnessTexture);
                 m_materialShader.setInt("uMaterial.roughness", texture_idx);
-                m_materialShader.setFloat("uMaterial.roughness_scale", mesh.material.roughness_scale);
+                m_materialShader.setFloat("uMaterial.roughness_scale", mesh.material.roughnessScale);
                 ++texture_idx;
 
                 glBindVertexArray(mesh.vao);
@@ -324,12 +322,13 @@ void Renderer::render() {
 
         m_skyShader.bind();
 
-        f32 aspect_ratio = core->game_state.render_options.width / (f32) core->game_state.render_options.height;
+        f32 aspectRatio = core->gameState.renderOptions.width / (f32) core->gameState.renderOptions.height;
 
         m_skyShader.setMat4("uViewProjectionMatrix",
-                        glm::perspective(core->game_state.camera.fov_radians, aspect_ratio, 0.01f, 10.0f) *
-                        glm::lookAt(glm::vec3(0), core->game_state.camera.look_at - core->game_state.camera.position,
-                                    glm::vec3(0, 1, 0)));
+                            glm::perspective(core->gameState.camera.fovRadians, aspectRatio, 0.01f, 10.0f) *
+                            glm::lookAt(glm::vec3(0),
+                                        core->gameState.camera.lookAt - core->gameState.camera.position,
+                                        glm::vec3(0, 1, 0)));
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, m_environmentMap.id);

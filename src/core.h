@@ -25,7 +25,7 @@ public:
     /// Log a fatal error and quit
     [[noreturn]] void fatal(const std::string &msg);
 
-    GameState game_state;
+    GameState gameState;
     Platform platform;
     Renderer renderer;
     ResourceManager resourceManager;

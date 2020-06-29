@@ -5,8 +5,8 @@ void Framebuffer::init(u32 width, u32 height) {
     m_width = width;
     m_height = height;
 
-    s32 previously_bound;
-    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &previously_bound);
+    s32 previouslyBound;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &previouslyBound);
 
     // generate
     glGenFramebuffers(1, &id);
@@ -25,7 +25,7 @@ void Framebuffer::init(u32 width, u32 height) {
         core->fatal("Framebuffer is incomplete");
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, previously_bound);
+    glBindFramebuffer(GL_FRAMEBUFFER, previouslyBound);
 }
 
 void Framebuffer::destroy() {

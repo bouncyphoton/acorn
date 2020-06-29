@@ -7,22 +7,22 @@ void ResourceManager::init() {
 
     u8 black[4] = {0, 0, 0, 255};
     m_textureBlack = new Texture();
-    m_textureBlack->init2d(GL_RGBA, 1, 1, GL_UNSIGNED_BYTE, black, GL_RGBA);
+    m_textureBlack->init2D(GL_RGBA, 1, 1, GL_UNSIGNED_BYTE, black, GL_RGBA);
 
     u8 white[4] = {0, 0, 0, 255};
     m_textureWhite = new Texture();
-    m_textureWhite->init2d(GL_RGBA, 1, 1, GL_UNSIGNED_BYTE, white, GL_RGBA);
+    m_textureWhite->init2D(GL_RGBA, 1, 1, GL_UNSIGNED_BYTE, white, GL_RGBA);
 
     u8 normal[4] = {127, 127, 255, 255};
     m_textureNormal = new Texture();
-    m_textureNormal->init2d(GL_RGBA, 1, 1, GL_UNSIGNED_BYTE, normal, GL_RGBA);
+    m_textureNormal->init2D(GL_RGBA, 1, 1, GL_UNSIGNED_BYTE, normal, GL_RGBA);
 
     u8 missing[4 * 4] = {255, 0, 255, 255,
                          0, 0, 0, 255,
                          255, 0, 255, 255,
                          0, 0, 0, 255};
     m_textureMissing = new Texture();
-    m_textureMissing->init2d(GL_RGBA, 2, 2, GL_UNSIGNED_BYTE, missing, GL_RGBA);
+    m_textureMissing->init2D(GL_RGBA, 2, 2, GL_UNSIGNED_BYTE, missing, GL_RGBA);
 }
 
 void ResourceManager::destroy() {
@@ -86,7 +86,8 @@ Texture *ResourceManager::getBuiltInTexture(BuiltInTextureEnum default_tex) {
         case BuiltInTextureEnum::NORMAL:
             return m_textureNormal;
         default:
-            core->warn("Unhandled case for getting a built in texture: " + std::to_string(static_cast<int>(default_tex)));
+            core->warn("Unhandled case for getting a built in texture: " +
+                       std::to_string(static_cast<int>(default_tex)));
         case BuiltInTextureEnum::MISSING:
             return m_textureMissing;
     }

@@ -17,7 +17,7 @@ void Platform::init() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, consts::OPENGL_VERSION_MINOR);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    m_window = glfwCreateWindow(core->game_state.render_options.width, core->game_state.render_options.height,
+    m_window = glfwCreateWindow(core->gameState.renderOptions.width, core->gameState.renderOptions.height,
                                 consts::APP_NAME, nullptr, nullptr);
 
     if (!m_window) {
@@ -30,7 +30,7 @@ void Platform::init() {
         core->fatal("Failed to init gl3w");
     }
 
-    glfwSwapInterval(core->game_state.render_options.vsync_num_swap_frames);
+    glfwSwapInterval(core->gameState.renderOptions.vsyncNumSwapFrames);
 }
 
 void Platform::destroy() {
