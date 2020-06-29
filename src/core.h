@@ -5,6 +5,7 @@
 #include "platform.h"
 #include "renderer.h"
 #include "resource_manager.h"
+#include "debug_gui.h"
 #include <string>
 
 class Core {
@@ -25,15 +26,15 @@ public:
     [[noreturn]] void fatal(const std::string &msg);
 
     GameState game_state;
+    Platform platform;
+    Renderer renderer;
     ResourceManager resourceManager;
+    DebugGui debugGui;
 
 private:
     void init();
 
     void cleanup();
-
-    Platform m_platform;
-    Renderer m_renderer;
 };
 
 extern Core *core;

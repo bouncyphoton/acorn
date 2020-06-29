@@ -12,6 +12,8 @@ public:
 
     void update();
 
+    GLFWwindow *getGlfwWindow();
+
 private:
     GLFWwindow *m_window;
 };

@@ -42,7 +42,7 @@ void Core::run() {
     entityHandle_t rockHandle = game_state.scene.addEntity(rockEntity);
 
     while (true) {
-        m_platform.update();
+        platform.update();
 
         // TODO: remove temporary update
         {
@@ -58,9 +58,9 @@ void Core::run() {
         }
 
         // draw frame
-        m_renderer.render();
+        renderer.render();
 
-//        debug_gui_draw(&game_state);
+        debugGui.draw();
     }
 }
 
@@ -92,15 +92,15 @@ void Core::init() {
     game_state.camera.fov_radians = glm::quarter_pi<f32>();
     game_state.sun_direction = glm::normalize(glm::vec3(-1, 1, 1));
 
-    m_platform.init();
-    m_renderer.init();
+    platform.init();
+    renderer.init();
     resourceManager.init();
-//    if (!debug_gui_init()) return false;
+    debugGui.init();
 }
 
 void Core::cleanup() {
-//    debug_gui_shutdown();
+    debugGui.destroy();
     resourceManager.destroy();
-    m_renderer.destroy();
-    m_platform.destroy();
+    renderer.destroy();
+    platform.destroy();
 }

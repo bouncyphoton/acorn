@@ -46,3 +46,7 @@ void Platform::update() {
         core->quit();
     }
 }
+
+GLFWwindow *Platform::getGlfwWindow() {
+    return m_window;
+}
