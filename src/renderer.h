@@ -6,6 +6,7 @@
 #include "framebuffer.h"
 #include "constants.h"
 #include "texture.h"
+#include "shader.h"
 
 struct RenderStats {
     u32 vertices_rendered = 0;
@@ -43,11 +44,11 @@ private:
     Framebuffer m_workingFbo;
 
     // shaders
-    u32 m_materialShader = 0;
-    u32 m_skyShader = 0;
-    u32 m_diffuseIrradianceShader = 0;
-    u32 m_envMapPrefilterShader = 0;
-    u32 m_brdfLutShader = 0;
+    Shader m_materialShader;
+    Shader m_skyShader;
+    Shader m_diffuseIrradianceShader;
+    Shader m_envMapPrefilterShader;
+    Shader m_brdfLutShader;
 
     // dummy vao
     u32 m_dummyVao = 0;

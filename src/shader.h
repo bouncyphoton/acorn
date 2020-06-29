@@ -3,19 +3,40 @@
 
 #include "types.h"
 #include <glm/glm.hpp>
+#include <string>
+#include <unordered_map>
 
-u32 shader_create(const char *vertex_src, const char *fragment_src);
+/// OpenGL shader
+class Shader {
+public:
+    /// Load shaders from files
+    void init(const std::string &vertex_path, const std::string &fragment_path);
 
-void shader_destroy(u32 shader);
+    /// Cleanup shaders
+    void destroy();
 
-void shader_bind(u32 shader);
+    /// Bind shader for usage
+    void bind();
 
-void shader_set_int(u32 shader, const char *uniform_name, u32 value);
+    /// Set int shader uniform
+    void setInt(const std::string &name, s32 value);
 
-void shader_set_float(u32 shader, const char *uniform_name, f32 value);
+    /// Set float shader uniform
+    void setFloat(const std::string &name, f32 value);
 
-void shader_set_vec3(u32 shader, const char *uniform_name, glm::vec3 value);
+    /// Set vec3 shader uniform
+    void setVec3(const std::string &name, glm::vec3 value);
 
-void shader_set_mat4(u32 shader, const char *uniform_name, glm::mat4 value);
+    /// Set mat4 shader uniform
+    void setMat4(const std::string &name, glm::mat4 value);
+
+private:
+    u32 compileAndAttach(u32 shader_type, const char *shader_src, const char *debug_shader_path);
+
+    u32 getUniformLocation(const std::string &name);
+
+    u32 m_programId = 0;
+    std::unordered_map<std::string, u32> m_uniformLocations;
+};
 
 #endif //ACORN_SHADER_H
