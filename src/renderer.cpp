@@ -50,7 +50,7 @@ void Renderer::init() {
     };
     m_environmentMap.initCubemap(GL_RGB16F, w, h, GL_FLOAT, data, GL_RGB);
     for (int i = 0; i < 6; ++i) {
-        free(data[i]);
+        stbi_image_free(data[i]);
     }
 
     m_diffuseIrradianceCubemap.initCubemap(GL_RGB16F,
@@ -230,35 +230,6 @@ void Renderer::destroy() {
     m_defaultFbo.destroy();
 }
 
-void Renderer::queueRenderable(Renderable renderable) {
-    if (num_renderables_queued >= consts::MAX_RENDERABLES) {
-        fprintf(stderr, "[warn] tried to queue more renderables than MAX_RENDERABLES (%d)\n",
-                consts::MAX_RENDERABLES);
-        return;
-    }
-
-#if RENDERER_DEBUG_CHECKING_ENABLED
-    if (renderable.model == nullptr) {
-        fprintf(stderr, "[error] tried to queue renderable with null model\n");
-        return;
-    }
-
-    if (renderable.model->meshes == nullptr || renderable.model->materials == 0) {
-        fprintf(stderr, "[error] tried to queue renderable with invalid model:\n"
-                        "Model {\n"
-                        "  .meshes     = %p\n"
-                        "  .materials  = %p\n"
-                        "}\n",
-                renderable.model->meshes, renderable.model->materials);
-        return;
-    }
-#endif
-
-    // queue renderable
-    renderables[num_renderables_queued] = renderable;
-    ++num_renderables_queued;
-}
-
 void Renderer::render() {
     // bind default fbo
     m_defaultFbo.bind();
@@ -305,16 +276,16 @@ void Renderer::render() {
         m_materialShader.setMat4("uViewProjectionMatrix", view_projection_matrix);
         m_materialShader.setVec3("uCameraPosition", core->game_state.camera.position);
 
-        // render renderables
-        for (u32 i = 0; i < num_renderables_queued; ++i) {
-            Renderable *current = &renderables[i];
+        // render entities
+        for (const Entity &entity : core->game_state.scene.getEntities()) {
+            if (!entity.active) continue;
 
-            glm::mat4 model_matrix = transform_to_matrix(&current->transform);
+            glm::mat4 model_matrix = transform_to_matrix(entity.transform);
             m_materialShader.setMat4("uModelMatrix", model_matrix);
             m_materialShader.setMat4("uNormalMatrix", glm::transpose(glm::inverse(model_matrix)));
 
             // render each mesh in model
-            for (auto &mesh : current->model->meshes) {
+            for (auto &mesh : entity.model->meshes) {
                 glActiveTexture(GL_TEXTURE0 + texture_idx);
                 glBindTexture(GL_TEXTURE_2D, mesh.material.albedo_texture);
                 m_materialShader.setInt("uMaterial.albedo", texture_idx);
@@ -344,9 +315,6 @@ void Renderer::render() {
                 m_renderStats.vertices_rendered += mesh.vertices.size();
             }
         }
-
-        // reset queued renderables
-        num_renderables_queued = 0;
     }
 
     // draw sky

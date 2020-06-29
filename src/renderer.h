@@ -1,7 +1,6 @@
 #ifndef ACORN_RENDERER_H
 #define ACORN_RENDERER_H
 
-#include "renderable.h"
 #include "game_state.h"
 #include "framebuffer.h"
 #include "constants.h"
@@ -19,17 +18,11 @@ public:
 
     void destroy();
 
-    void queueRenderable(Renderable renderable);
-
     void render();
 
     RenderStats getStats();
 
 private:
-    // renderable queuing
-    u32 num_renderables_queued = 0;
-    Renderable renderables[consts::MAX_RENDERABLES] = {};
-
     // textures
     Texture m_defaultFboTexture;
     Texture m_environmentMap;

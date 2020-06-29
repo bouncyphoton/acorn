@@ -14,6 +14,8 @@ public:
     // TODO: add the ability to update selective parts of entity
     void updateEntity(entityHandle_t handle, Entity entity);
 
+    const std::vector<Entity> &getEntities() const;
+
 private:
     // TODO: spacial partitioning
     std::vector<Entity> m_entities;

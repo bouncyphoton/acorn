@@ -13,12 +13,8 @@ void Core::run() {
 
     info("Initialized successfully");
 
-    Model *sphereModel = resourceManager.getModel("../assets/spheres/spheres.obj");
-    Model *rifleModel = resourceManager.getModel("../assets/stylized-rifle/Stylized_rifle_final.obj");
-    Model *rockModel = resourceManager.getModel("../assets/rock03/3DRock003_16K.obj");
-
     Entity sphereEntity = {
-            sphereModel,
+            resourceManager.getModel("../assets/spheres/spheres.obj"),
             Transform{
                     glm::vec3(0, 0.15, 0),
                     glm::identity<glm::quat>(),
@@ -26,7 +22,7 @@ void Core::run() {
             }};
 
     Entity rifleEntity = {
-            rifleModel,
+            resourceManager.getModel("../assets/stylized-rifle/Stylized_rifle_final.obj"),
             Transform{
                     glm::vec3(0, -0.45, -0.35),
                     glm::vec3(0, glm::half_pi<f32>(), 0),
@@ -34,16 +30,16 @@ void Core::run() {
             }};
 
     Entity rockEntity = {
-            rockModel,
+            resourceManager.getModel("../assets/rock03/3DRock003_16K.obj"),
             Transform{
                     glm::vec3(0, -0.45, 0.35),
                     glm::vec3(0, glm::half_pi<f32>(), 0),
                     glm::vec3(1.0f)
             }};
 
-    entityHandle_t sphereId = game_state.scene.addEntity(sphereEntity);
-    entityHandle_t rifleId = game_state.scene.addEntity(rifleEntity);
-    entityHandle_t rockId = game_state.scene.addEntity(rockEntity);
+    entityHandle_t sphereHandle = game_state.scene.addEntity(sphereEntity);
+    entityHandle_t rifleHandle = game_state.scene.addEntity(rifleEntity);
+    entityHandle_t rockHandle = game_state.scene.addEntity(rockEntity);
 
     while (true) {
         m_platform.update();
@@ -57,48 +53,8 @@ void Core::run() {
             }
 
             // Make spheres float up and down
-//            sphereEntity.transform.position.y = 0.15 + sinf(glfwGetTime());
-//            game_state.scene.updateEntity(sphereId, sphereEntity);
-
-            Model *spheres = resourceManager.getModel("../assets/spheres/spheres.obj");
-            Model *rifle = resourceManager.getModel("../assets/stylized-rifle/Stylized_rifle_final.obj");
-            Model *rock = resourceManager.getModel("../assets/rock03/3DRock003_16K.obj");
-
-            m_renderer.queueRenderable(Renderable{
-                    Transform{
-                            glm::vec3(0, 0.15, 0),
-                            glm::identity<glm::quat>(),
-                            glm::vec3(1.0f)
-                    },
-                    spheres
-            });
-
-            m_renderer.queueRenderable(Renderable{
-                    Transform{
-                            glm::vec3(0, -0.45, -0.35),
-                            glm::vec3(0, glm::half_pi<f32>(), 0),
-                            glm::vec3(0.01f)
-                    },
-                    rifle
-            });
-
-            m_renderer.queueRenderable(Renderable{
-                    Transform{
-                            glm::vec3(0, -0.45, 0.35),
-                            glm::vec3(0, glm::half_pi<f32>(), 0),
-                            glm::vec3(1.0f)
-                    },
-                    rock
-            });
-
-            m_renderer.queueRenderable(Renderable{
-                    Transform{
-                            glm::vec3(0, -0.45, 0.35),
-                            glm::vec3(0, glm::half_pi<f32>(), 0),
-                            glm::vec3(1.0f)
-                    },
-                    rock
-            });
+            sphereEntity.transform.position.y = 0.15 + sinf(glfwGetTime()) * 0.05;
+            game_state.scene.updateEntity(sphereHandle, sphereEntity);
         }
 
         // draw frame
