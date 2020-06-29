@@ -79,7 +79,7 @@ void Core::quit() {
 }
 
 void Core::info(const std::string &msg) {
-    std::cout << "[msg] " << msg << std::endl;
+    std::cout << "[info] " << msg << std::endl;
 }
 
 void Core::warn(const std::string &msg) {
@@ -103,7 +103,7 @@ void Core::init() {
     m_platform.init();
     m_renderer.init();
     resourceManager.init();
-    if (!textures_init()) core->fatal("Failed to init textures");
+//    if (!textures_init()) core->fatal("Failed to init textures");
 //    if (!debug_gui_init()) return false;
 
 //    game_state.scene.addModel("../assets/spheres/spheres.obj");
@@ -113,7 +113,7 @@ void Core::init() {
 
 void Core::cleanup() {
 //    debug_gui_shutdown();
-    textures_shutdown();
+//    textures_shutdown();
     resourceManager.destroy();
     m_renderer.destroy();
     m_platform.destroy();

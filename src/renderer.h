@@ -5,6 +5,7 @@
 #include "game_state.h"
 #include "framebuffer.h"
 #include "constants.h"
+#include "texture.h"
 
 struct RenderStats {
     u32 vertices_rendered = 0;
@@ -29,12 +30,13 @@ private:
     Renderable renderables[consts::MAX_RENDERABLES] = {};
 
     // textures
-    u32 m_defaultFboTexture = 0;
-    u32 m_environmentMap = 0;
-    u32 m_diffuseIrradianceCubemap = 0;
-    u32 m_prefilteredEnvCubemap = 0;
-    u32 m_numPrefilteredEnvMipmapLevels; // not a texture, but important for prefiltered env cubemap
-    u32 m_brdfLut = 0;
+    Texture m_defaultFboTexture;
+    Texture m_environmentMap;
+    Texture m_diffuseIrradianceCubemap;
+    Texture m_prefilteredEnvCubemap;
+    Texture m_brdfLut;
+
+    u32 m_numPrefilteredEnvMipmapLevels;
 
     // framebuffers
     Framebuffer m_defaultFbo = {};

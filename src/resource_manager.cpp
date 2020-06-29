@@ -7,22 +7,22 @@ void ResourceManager::init() {
 
     u8 black[4] = {0, 0, 0, 255};
     m_textureBlack = new Texture();
-    m_textureBlack->init(GL_RGBA, 1, 1, GL_UNSIGNED_BYTE, black, GL_RGBA);
+    m_textureBlack->init2d(GL_RGBA, 1, 1, GL_UNSIGNED_BYTE, black, GL_RGBA);
 
     u8 white[4] = {0, 0, 0, 255};
     m_textureWhite = new Texture();
-    m_textureWhite->init(GL_RGBA, 1, 1, GL_UNSIGNED_BYTE, white, GL_RGBA);
+    m_textureWhite->init2d(GL_RGBA, 1, 1, GL_UNSIGNED_BYTE, white, GL_RGBA);
 
     u8 normal[4] = {127, 127, 255, 255};
     m_textureNormal = new Texture();
-    m_textureNormal->init(GL_RGBA, 1, 1, GL_UNSIGNED_BYTE, normal, GL_RGBA);
+    m_textureNormal->init2d(GL_RGBA, 1, 1, GL_UNSIGNED_BYTE, normal, GL_RGBA);
 
     u8 missing[4 * 4] = {255, 0, 255, 255,
                          0, 0, 0, 255,
                          255, 0, 255, 255,
                          0, 0, 0, 255};
     m_textureMissing = new Texture();
-    m_textureMissing->init(GL_RGBA, 2, 2, GL_UNSIGNED_BYTE, missing, GL_RGBA);
+    m_textureMissing->init2d(GL_RGBA, 2, 2, GL_UNSIGNED_BYTE, missing, GL_RGBA);
 }
 
 void ResourceManager::destroy() {
@@ -55,6 +55,7 @@ Model *ResourceManager::getModel(const std::string &path) {
     }
 
     // Try to load model
+    core->info("Loading model '" + path + "'");
     Model *model = new Model();
     model->init(path);
     m_models.emplace(path, model);
@@ -69,6 +70,7 @@ Texture *ResourceManager::getTexture(const std::string &path) {
     }
 
     // Try to load texture
+    core->info("Loading texture '" + path + "'");
     Texture *texture = new Texture();
     texture->init(path);
     m_textures.emplace(path, texture);
