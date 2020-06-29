@@ -1,51 +1,48 @@
 #include "framebuffer.h"
-#include "texture.h"
-#include <cstdio>
+#include "core.h"
 
-Framebuffer framebuffer_create(u32 width, u32 height) {
-    Framebuffer fbo = {};
-    fbo.width = width;
-    fbo.height = height;
+void Framebuffer::init(u32 width, u32 height) {
+    m_width = width;
+    m_height = height;
 
     s32 previously_bound;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &previously_bound);
 
     // generate
-    glGenFramebuffers(1, &fbo.id);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo.id);
+    glGenFramebuffers(1, &id);
+    glBindFramebuffer(GL_FRAMEBUFFER, id);
 
     // attach draw buffers
     glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
     // depth renderbuffer
-    glGenRenderbuffers(1, &fbo.depth_renderbuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, fbo.depth_renderbuffer);
+    glGenRenderbuffers(1, &m_depthRenderbuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, m_depthRenderbuffer);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fbo.depth_renderbuffer);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_depthRenderbuffer);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        fprintf(stderr, "[error] framebuffer is incomplete\n");
+        core->fatal("Framebuffer is incomplete");
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, previously_bound);
-    return fbo;
 }
 
-void framebuffer_destroy(Framebuffer *fbo) {
-    glDeleteRenderbuffers(1, &fbo->depth_renderbuffer);
-    glDeleteFramebuffers(1, &fbo->id);
+void Framebuffer::destroy() {
+    glDeleteRenderbuffers(1, &m_depthRenderbuffer);
+    glDeleteFramebuffers(1, &id);
 }
 
-void framebuffer_bind(Framebuffer *fbo) {
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo->id);
-    glViewport(0, 0, fbo->width, fbo->height);
+void Framebuffer::bind() {
+    glBindFramebuffer(GL_FRAMEBUFFER, id);
+    glViewport(0, 0, m_width, m_height);
 }
 
-void framebuffer_blit_to_default_framebuffer(Framebuffer *fbo, u32 mask, u32 filter) {
+void Framebuffer::blitToDefaultFramebuffer(u32 mask, u32 filter) {
     GLint dims[4] = {0};
     glGetIntegerv(GL_VIEWPORT, dims);
 
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo->id);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, id);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBlitFramebuffer(0, 0, fbo->width, fbo->height, dims[0], dims[1], dims[2], dims[3], mask, filter);
+    glBlitFramebuffer(0, 0, m_width, m_height, dims[0], dims[1], dims[2], dims[3], mask, filter);
 }

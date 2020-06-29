@@ -72,14 +72,14 @@ void Renderer::init() {
     // init fbos
     //----------
 
-    m_workingFbo = framebuffer_create(w, h);
-    m_defaultFbo = framebuffer_create(core->game_state.render_options.width, core->game_state.render_options.height);
+    m_workingFbo.init(w, h);
+    m_defaultFbo.init(core->game_state.render_options.width, core->game_state.render_options.height);
 
     if (!m_defaultFbo.id || !m_workingFbo.id) {
         core->fatal("Failed to create FBOs");
     }
 
-    framebuffer_bind(&m_defaultFbo);
+    m_defaultFbo.bind();
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_defaultFboTexture.id, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -123,7 +123,7 @@ void Renderer::init() {
     //-----------
 
     // set state for precomputations
-    framebuffer_bind(&m_workingFbo);
+    m_workingFbo.bind();
     glDisable(GL_DEPTH_TEST);
 
     // view and projection matrices for cubemap rendering
@@ -238,8 +238,8 @@ void Renderer::destroy() {
     m_environmentMap.destroy();
     m_defaultFboTexture.destroy();
 
-    framebuffer_destroy(&m_workingFbo);
-    framebuffer_destroy(&m_defaultFbo);
+    m_workingFbo.destroy();
+    m_defaultFbo.destroy();
 }
 
 void Renderer::queueRenderable(Renderable renderable) {
@@ -273,7 +273,7 @@ void Renderer::queueRenderable(Renderable renderable) {
 
 void Renderer::render() {
     // bind default fbo
-    framebuffer_bind(&m_defaultFbo);
+    m_defaultFbo.bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // draw scene
@@ -388,7 +388,7 @@ void Renderer::render() {
     }
 
     // blit to default framebuffer
-    framebuffer_blit_to_default_framebuffer(&m_defaultFbo, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+    m_defaultFbo.blitToDefaultFramebuffer(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 }
 
 RenderStats Renderer::getStats() {

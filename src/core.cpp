@@ -103,7 +103,6 @@ void Core::init() {
     m_platform.init();
     m_renderer.init();
     resourceManager.init();
-//    if (!textures_init()) core->fatal("Failed to init textures");
 //    if (!debug_gui_init()) return false;
 
 //    game_state.scene.addModel("../assets/spheres/spheres.obj");
@@ -113,7 +112,6 @@ void Core::init() {
 
 void Core::cleanup() {
 //    debug_gui_shutdown();
-//    textures_shutdown();
     resourceManager.destroy();
     m_renderer.destroy();
     m_platform.destroy();

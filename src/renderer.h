@@ -39,8 +39,8 @@ private:
     u32 m_numPrefilteredEnvMipmapLevels;
 
     // framebuffers
-    Framebuffer m_defaultFbo = {};
-    Framebuffer m_workingFbo = {};
+    Framebuffer m_defaultFbo;
+    Framebuffer m_workingFbo;
 
     // shaders
     u32 m_materialShader = 0;
