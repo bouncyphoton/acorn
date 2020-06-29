@@ -1,6 +1,5 @@
 #include "debug_gui.h"
-#include "window.h"
-
+#include "core.h"
 #include "renderer.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -8,27 +7,25 @@
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 
-bool debug_gui_init() {
-    const char *glsl_version = "#version 330 core";
+void DebugGui::init() {
+    const char *glslVersion = "#version 330 core";
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
     ImGui::StyleColorsDark();
 
-    ImGui_ImplGlfw_InitForOpenGL(window_get_glfw_window(), true);
-    ImGui_ImplOpenGL3_Init(glsl_version);
-
-    return true;
+    ImGui_ImplGlfw_InitForOpenGL(core->platform.getGlfwWindow(), true);
+    ImGui_ImplOpenGL3_Init(glslVersion);
 }
 
-void debug_gui_shutdown() {
+void DebugGui::destroy() {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 }
 
-void debug_gui_draw(GameState *game_state) {
+void DebugGui::draw() {
     //----------
     // new frame
     //----------
@@ -45,7 +42,7 @@ void debug_gui_draw(GameState *game_state) {
 
     ImGui::Begin("Debug");
     {
-        RenderStats stats = renderer_get_stats();
+        RenderStats stats = core->renderer.getStats();
         ImGui::Text("Performance Stats");
         ImGui::Text("%.2fms / %.2f FPS", 1000.0f / io.Framerate, io.Framerate);
         ImGui::Text("%d verts", stats.vertices_rendered);
@@ -53,10 +50,10 @@ void debug_gui_draw(GameState *game_state) {
         ImGui::Separator();
 
         ImGui::Text("Camera");
-        ImGui::Checkbox("orbit", &game_state->camera.is_orbiting);
-        ImGui::SliderFloat("fov", &game_state->camera.fov_radians, 0.0f, glm::pi<f32>());
-        ImGui::DragFloat3("position", &game_state->camera.position[0], 0.1f);
-        ImGui::DragFloat3("look at", &game_state->camera.look_at[0], 0.1f);
+        ImGui::Checkbox("orbit", &core->gameState.camera.isOrbiting);
+        ImGui::SliderFloat("fov", &core->gameState.camera.fovRadians, 0.0f, glm::pi<f32>());
+        ImGui::DragFloat3("position", &core->gameState.camera.position[0], 0.1f);
+        ImGui::DragFloat3("look at", &core->gameState.camera.lookAt[0], 0.1f);
     }
     ImGui::End();
 
@@ -65,8 +62,6 @@ void debug_gui_draw(GameState *game_state) {
     //----------
 
     ImGui::Render();
-    int display_w, display_h;
-    glfwGetFramebufferSize(window_get_glfw_window(), &display_w, &display_h);
-    glViewport(0, 0, display_w, display_h);
+    glViewport(0, 0, core->gameState.renderOptions.width, core->gameState.renderOptions.height);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }

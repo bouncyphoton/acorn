@@ -6,19 +6,22 @@
 
 // TODO: framebuffer resize
 
-struct Framebuffer {
+class Framebuffer {
+public:
+    void init(u32 width, u32 height);
+
+    void destroy();
+
+    void bind();
+
+    void blitToDefaultFramebuffer(u32 mask, u32 filter);
+
     u32 id = 0;
-    u32 width = 0;
-    u32 height = 0;
-    u32 depth_renderbuffer = 0;
+
+private:
+    u32 m_width = 0;
+    u32 m_height = 0;
+    u32 m_depthRenderbuffer = 0;
 };
-
-Framebuffer framebuffer_create(u32 width, u32 height);
-
-void framebuffer_destroy(Framebuffer *fbo);
-
-void framebuffer_bind(Framebuffer *fbo);
-
-void framebuffer_blit_to_default_framebuffer(Framebuffer *fbo, u32 mask, u32 filter);
 
 #endif //ACORN_FRAMEBUFFER_H

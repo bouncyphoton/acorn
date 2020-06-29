@@ -10,12 +10,10 @@ struct Transform {
     glm::vec3 scale = glm::vec3(1);
 };
 
-inline glm::mat4 transform_to_matrix(Transform *transform) {
-    if (transform == nullptr) return glm::mat4(1);
-
-    glm::mat4 t = glm::translate(glm::mat4(1), transform->position);
-    glm::mat4 r = glm::mat4_cast(transform->orientation);
-    glm::mat4 s = glm::scale(glm::mat4(1), transform->scale);
+inline glm::mat4 transform_to_matrix(const Transform &transform) {
+    glm::mat4 t = glm::translate(glm::mat4(1), transform.position);
+    glm::mat4 r = glm::mat4_cast(transform.orientation);
+    glm::mat4 s = glm::scale(glm::mat4(1), transform.scale);
 
     return t * r * s;
 }

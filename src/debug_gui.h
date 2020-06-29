@@ -3,10 +3,13 @@
 
 #include "game_state.h"
 
-bool debug_gui_init();
+class DebugGui {
+public:
+    void init();
 
-void debug_gui_shutdown();
+    void destroy();
 
-void debug_gui_draw(GameState *game_state);
+    void draw();
+};
 
 #endif //ACORN_DEBUG_GUI_H
