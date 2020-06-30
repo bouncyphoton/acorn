@@ -23,9 +23,6 @@ struct GameState {
     RenderOptions renderOptions = {};
     Camera camera = {};
     Scene scene = {};
-
-    // unit vector pointing towards the sun
-    glm::vec3 sunDirection = glm::vec3(0, 1, 0);
 };
 
 #endif //ACORN_GAME_STATE_H

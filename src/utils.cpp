@@ -1,6 +1,8 @@
 #include "utils.h"
 #include "core.h"
 #include <fstream>
+#include <sstream>
+#include <iomanip>
 
 namespace utils {
     std::string load_file_to_string(const char *file_path) {
@@ -16,5 +18,14 @@ namespace utils {
         }
 
         core->fatal("Failed to load file to string \"" + std::string(file_path) + "\"");
+    }
+
+    std::string get_date_time_as_string() {
+        auto t = std::time(nullptr);
+        auto tm = *std::localtime(&t);
+
+        std::ostringstream os;
+        os << std::put_time(&tm, "%F %T");
+        return os.str();
     }
 }

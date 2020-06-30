@@ -262,7 +262,7 @@ void Renderer::render() {
         ++texture_idx;
 
         // sun
-        m_materialShader.setVec3("uSunDirection", core->gameState.sunDirection);
+        m_materialShader.setVec3("uSunDirection", core->gameState.scene.sunDirection);
 
         // camera
         f32 aspectRatio = (f32) core->gameState.renderOptions.width / core->gameState.renderOptions.height;

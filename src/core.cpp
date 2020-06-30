@@ -1,4 +1,5 @@
 #include "core.h"
+#include "utils.h"
 #include <iostream>
 
 static Core core_local;
@@ -49,10 +50,6 @@ void Core::run() {
                 gameState.camera.position = glm::vec3(cos(t) * 2, 0, sin(t) * 2);
                 gameState.camera.lookAt = glm::vec3(0, 0, 0);
             }
-
-            // Make spheres float up and down
-            sphereEntity.transform.position.y = 0.15 + sinf(glfwGetTime()) * 0.05;
-            gameState.scene.updateEntity(sphereHandle, sphereEntity);
         }
 
         // draw frame
@@ -68,16 +65,20 @@ void Core::quit() {
     exit(0);
 }
 
+static void generic_log(const std::string &msg) {
+    std::cout << "[" << utils::get_date_time_as_string() << "]" << msg << std::endl;
+}
+
 void Core::info(const std::string &msg) {
-    std::cout << "[info] " << msg << std::endl;
+    generic_log("[info] " + msg);
 }
 
 void Core::warn(const std::string &msg) {
-    std::cerr << "[warn] " << msg << std::endl;
+    generic_log("[warn] " + msg);
 }
 
 void Core::fatal(const std::string &msg) {
-    std::cerr << "[fatal] " << msg << std::endl;
+    generic_log("[fatal] " + msg);
     cleanup();
     exit(1);
 }
@@ -88,7 +89,7 @@ void Core::init() {
     gameState.camera.position = glm::vec3(1, 0, 0);
     gameState.camera.lookAt = glm::vec3(0, 0, -1);
     gameState.camera.fovRadians = glm::quarter_pi<f32>();
-    gameState.sunDirection = glm::normalize(glm::vec3(-1, 1, 1));
+    gameState.scene.sunDirection = glm::normalize(glm::vec3(-1, 1, 1));
 
     platform.init();
     renderer.init();

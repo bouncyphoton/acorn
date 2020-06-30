@@ -16,6 +16,11 @@ public:
 
     const std::vector<Entity> &getEntities() const;
 
+    // TODO: scene "globaL" properties
+
+    // unit vector pointing towards the sun
+    glm::vec3 sunDirection = glm::vec3(0, 1, 0);
+
 private:
     // TODO: spacial partitioning
     std::vector<Entity> m_entities;
