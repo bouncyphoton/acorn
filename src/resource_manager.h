@@ -7,6 +7,14 @@
 #include <unordered_map>
 #include <string>
 
+enum class BuiltInTextureEnum {
+    MISSING, BLACK, WHITE, NORMAL
+};
+
+enum class BuiltInModelEnum {
+    PLANE
+};
+
 class ResourceManager {
 public:
     void init();
@@ -20,7 +28,10 @@ public:
     Texture *getTexture(const std::string &path);
 
     /// Get a built in texture
-    Texture *getBuiltInTexture(BuiltInTextureEnum default_tex);
+    Texture *getBuiltInTexture(BuiltInTextureEnum tex);
+
+    /// Get a built in model
+    Model *getBuiltInModel(BuiltInModelEnum model);
 
 private:
     std::unordered_map<std::string, Model *> m_models;
@@ -29,6 +40,7 @@ private:
     Texture *m_textureWhite;   // (255, 255, 255)
     Texture *m_textureNormal;  // (127, 127, 255)
     Texture *m_textureMissing; // (0, 0, 0) (255, 0, 255) pattern
+    Model *m_modelPlane; // Unit plane [-1, 1] with a +y normal
 };
 
 #endif //ACORN_RESOURCE_MANAGER_H

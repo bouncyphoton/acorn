@@ -9,13 +9,14 @@
 struct RenderOptions {
     u32 width = 800;
     u32 height = 600;
-    u32 vsyncNumSwapFrames = 0;
+    u32 vsyncNumSwapFrames = 1;
 };
 
 struct Camera {
     glm::vec3 position = glm::vec3(0);
     glm::vec3 lookAt = glm::vec3(0, 0, -1);
     f32 fovRadians = glm::half_pi<f32>();
+    f32 exposure = 1.0f;
     bool isOrbiting = true;
 };
 

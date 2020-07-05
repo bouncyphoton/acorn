@@ -5,8 +5,10 @@ in VertexData {
 } i;
 
 uniform samplerCube uEnvMap;
+uniform float uExposure;
 
 vec3 tonemap(vec3 x) {
+    x *= uExposure;
     x = pow(x, vec3(1/2.2));
 
     const float a = 2.51;

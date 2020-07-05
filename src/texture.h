@@ -5,10 +5,6 @@
 #include <GL/gl3w.h>
 #include <string>
 
-enum class BuiltInTextureEnum {
-    MISSING, BLACK, WHITE, NORMAL
-};
-
 // TODO: binding from texture class? and other opengl funcs?
 
 class Texture {

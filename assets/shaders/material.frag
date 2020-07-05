@@ -26,6 +26,7 @@ uniform int uNumPrefilteredEnvMipmapLevels;
 
 uniform vec3 uSunDirection;
 uniform vec3 uCameraPosition;
+uniform float uExposure;
 
 const vec2 inv_atan = vec2(1.0 / (2 * PI), 1.0 / PI);
 vec2 sample_equirectangular_map(vec3 v) {
@@ -101,6 +102,7 @@ vec3 calculate_brdf(vec3 albedo, vec3 N, vec3 V, float metallic, float roughness
 }
 
 vec3 tonemap(vec3 x) {
+    x *= uExposure;
     x = pow(x, vec3(1/2.2));
 
     const float a = 2.51;

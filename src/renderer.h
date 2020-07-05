@@ -8,8 +8,8 @@
 #include "shader.h"
 
 struct RenderStats {
-    u32 vertices_rendered = 0;
-    u32 draw_calls = 0;
+    u32 verticesRendered = 0;
+    u32 drawCalls = 0;
 };
 
 class Renderer {

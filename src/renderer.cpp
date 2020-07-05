@@ -36,7 +36,7 @@ void Renderer::init() {
     //--------------
 
     // TODO: don't hardcode skybox textures into renderer
-    // NOTE: this code runs before textures_init, so image isn't flipped (which in this case, is good)
+    stbi_set_flip_vertically_on_load(0);
     s32 w, h;
     void *data[6] = {
             stbi_loadf("../assets/env/px.hdr", &w, &h, nullptr, 3),
@@ -50,6 +50,7 @@ void Renderer::init() {
     for (int i = 0; i < 6; ++i) {
         stbi_image_free(data[i]);
     }
+    stbi_set_flip_vertically_on_load(1);
 
     m_diffuseIrradianceCubemap.initCubemap(GL_RGB16F,
                                            consts::DIFFUSE_IRRADIANCE_TEXTURE_SIZE,
@@ -240,26 +241,26 @@ void Renderer::render() {
         // TODO: optimize by removing redundant binds and uniform setting
         m_materialShader.bind();
 
-        u32 texture_idx = 0;
+        u32 textureIdx = 0;
 
         // TODO: take tonemapping out of sky.frag and material.frag to separate pass to keep everything linear
 
-        glActiveTexture(GL_TEXTURE0 + texture_idx);
+        glActiveTexture(GL_TEXTURE0 + textureIdx);
         glBindTexture(GL_TEXTURE_CUBE_MAP, m_diffuseIrradianceCubemap.id);
-        m_materialShader.setInt("uDiffuseIrradianceMap", texture_idx);
-        ++texture_idx;
+        m_materialShader.setInt("uDiffuseIrradianceMap", textureIdx);
+        ++textureIdx;
 
-        glActiveTexture(GL_TEXTURE0 + texture_idx);
+        glActiveTexture(GL_TEXTURE0 + textureIdx);
         glBindTexture(GL_TEXTURE_CUBE_MAP, m_prefilteredEnvCubemap.id);
-        m_materialShader.setInt("uPrefilteredEnvironmentMap", texture_idx);
-        ++texture_idx;
+        m_materialShader.setInt("uPrefilteredEnvironmentMap", textureIdx);
+        ++textureIdx;
 
         m_materialShader.setInt("uNumPrefilteredEnvMipmapLevels", m_numPrefilteredEnvMipmapLevels);
 
-        glActiveTexture(GL_TEXTURE0 + texture_idx);
+        glActiveTexture(GL_TEXTURE0 + textureIdx);
         glBindTexture(GL_TEXTURE_2D, m_brdfLut.id);
-        m_materialShader.setInt("uBrdfLut", texture_idx);
-        ++texture_idx;
+        m_materialShader.setInt("uBrdfLut", textureIdx);
+        ++textureIdx;
 
         // sun
         m_materialShader.setVec3("uSunDirection", core->gameState.scene.sunDirection);
@@ -273,6 +274,7 @@ void Renderer::render() {
         glm::mat4 viewProjectionMatrix = projectionMatrix * viewMatrix;
         m_materialShader.setMat4("uViewProjectionMatrix", viewProjectionMatrix);
         m_materialShader.setVec3("uCameraPosition", core->gameState.camera.position);
+        m_materialShader.setFloat("uExposure", core->gameState.camera.exposure);
 
         // render entities
         for (const Entity &entity : core->gameState.scene.getEntities()) {
@@ -284,33 +286,33 @@ void Renderer::render() {
 
             // render each mesh in model
             for (auto &mesh : entity.model->meshes) {
-                glActiveTexture(GL_TEXTURE0 + texture_idx);
+                glActiveTexture(GL_TEXTURE0 + textureIdx);
                 glBindTexture(GL_TEXTURE_2D, mesh.material.albedoTexture);
-                m_materialShader.setInt("uMaterial.albedo", texture_idx);
-                ++texture_idx;
+                m_materialShader.setInt("uMaterial.albedo", textureIdx);
+                ++textureIdx;
 
-                glActiveTexture(GL_TEXTURE0 + texture_idx);
+                glActiveTexture(GL_TEXTURE0 + textureIdx);
                 glBindTexture(GL_TEXTURE_2D, mesh.material.normalTexture);
-                m_materialShader.setInt("uMaterial.normal", texture_idx);
-                ++texture_idx;
+                m_materialShader.setInt("uMaterial.normal", textureIdx);
+                ++textureIdx;
 
-                glActiveTexture(GL_TEXTURE0 + texture_idx);
+                glActiveTexture(GL_TEXTURE0 + textureIdx);
                 glBindTexture(GL_TEXTURE_2D, mesh.material.metallicTexture);
-                m_materialShader.setInt("uMaterial.metallic", texture_idx);
+                m_materialShader.setInt("uMaterial.metallic", textureIdx);
                 m_materialShader.setFloat("uMaterial.metallic_scale", mesh.material.metallicScale);
-                ++texture_idx;
+                ++textureIdx;
 
-                glActiveTexture(GL_TEXTURE0 + texture_idx);
+                glActiveTexture(GL_TEXTURE0 + textureIdx);
                 glBindTexture(GL_TEXTURE_2D, mesh.material.roughnessTexture);
-                m_materialShader.setInt("uMaterial.roughness", texture_idx);
+                m_materialShader.setInt("uMaterial.roughness", textureIdx);
                 m_materialShader.setFloat("uMaterial.roughness_scale", mesh.material.roughnessScale);
-                ++texture_idx;
+                ++textureIdx;
 
                 glBindVertexArray(mesh.vao);
                 glDrawArrays(GL_TRIANGLES, 0, mesh.vertices.size());
 
-                ++m_renderStats.draw_calls;
-                m_renderStats.vertices_rendered += mesh.vertices.size();
+                ++m_renderStats.drawCalls;
+                m_renderStats.verticesRendered += mesh.vertices.size();
             }
         }
     }
@@ -333,6 +335,7 @@ void Renderer::render() {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, m_environmentMap.id);
         m_skyShader.setInt("uEnvMap", 0);
+        m_skyShader.setFloat("uExposure", core->gameState.camera.exposure);
 
         glBindVertexArray(m_dummyVao);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 14);

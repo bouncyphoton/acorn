@@ -45,8 +45,8 @@ void DebugGui::draw() {
         RenderStats stats = core->renderer.getStats();
         ImGui::Text("Performance Stats");
         ImGui::Text("%.2fms / %.2f FPS", 1000.0f / io.Framerate, io.Framerate);
-        ImGui::Text("%d verts", stats.vertices_rendered);
-        ImGui::Text("%d draw calls", stats.draw_calls);
+        ImGui::Text("%d verts", stats.verticesRendered);
+        ImGui::Text("%d draw calls", stats.drawCalls);
         ImGui::Separator();
 
         ImGui::Text("Camera");
@@ -54,6 +54,12 @@ void DebugGui::draw() {
         ImGui::SliderFloat("fov", &core->gameState.camera.fovRadians, 0.0f, glm::pi<f32>());
         ImGui::DragFloat3("position", &core->gameState.camera.position[0], 0.1f);
         ImGui::DragFloat3("look at", &core->gameState.camera.lookAt[0], 0.1f);
+        ImGui::SliderFloat("exposure", &core->gameState.camera.exposure, 0.0f, 100.0f, "%.3f", 2);
+
+        if (ImGui::Button("refresh renderer")) {
+            core->renderer.destroy();
+            core->renderer.init();
+        }
     }
     ImGui::End();
 
