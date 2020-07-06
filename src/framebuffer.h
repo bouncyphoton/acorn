@@ -14,6 +14,8 @@ public:
 
     void bind();
 
+    void blit(Framebuffer &fbo, u32 mask, u32 filter);
+
     void blitToDefaultFramebuffer(u32 mask, u32 filter);
 
     u32 id = 0;

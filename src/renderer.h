@@ -25,6 +25,7 @@ public:
 private:
     // textures
     Texture m_defaultFboTexture;
+    Texture m_workingTexture;
     Texture m_environmentMap;
     Texture m_diffuseIrradianceCubemap;
     Texture m_prefilteredEnvCubemap;
@@ -42,6 +43,7 @@ private:
     Shader m_diffuseIrradianceShader;
     Shader m_envMapPrefilterShader;
     Shader m_brdfLutShader;
+    Shader m_tonemapShader;
 
     // dummy vao
     u32 m_dummyVao = 0;

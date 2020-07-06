@@ -38,11 +38,27 @@ void Framebuffer::bind() {
     glViewport(0, 0, m_width, m_height);
 }
 
+void Framebuffer::blit(Framebuffer &fbo, u32 mask, u32 filter) {
+    s32 previouslyBound;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &previouslyBound);
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, id);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo.id);
+    glBlitFramebuffer(0, 0, m_width, m_height, 0, 0, fbo.m_width, fbo.m_height, mask, filter);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, previouslyBound);
+}
+
 void Framebuffer::blitToDefaultFramebuffer(u32 mask, u32 filter) {
+    s32 previouslyBound;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &previouslyBound);
+
     GLint dims[4] = {0};
     glGetIntegerv(GL_VIEWPORT, dims);
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, id);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBlitFramebuffer(0, 0, m_width, m_height, dims[0], dims[1], dims[2], dims[3], mask, filter);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, previouslyBound);
 }

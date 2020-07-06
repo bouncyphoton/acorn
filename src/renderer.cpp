@@ -6,14 +6,13 @@
 #include "constants.h"
 #include <stb_image.h>
 #include <GL/gl3w.h>
-#include <cstdio>
 
 static void APIENTRY opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
                                            const GLchar *message, const void *user_param) {
     if (severity == GL_DEBUG_SEVERITY_HIGH) {
-        fprintf(stderr, "[error][opengl] %s\n", message);
+        core->warn("[error][opengl] " + std::string(message));
     } else if (severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
-        fprintf(stdout, "[debug][opengl] %s\n", message);
+        core->info("[opengl] " + std::string(message));
     }
 }
 
@@ -64,6 +63,8 @@ void Renderer::init() {
                      consts::BRDF_LUT_TEXTURE_SIZE,
                      consts::BRDF_LUT_TEXTURE_SIZE,
                      GL_FLOAT, nullptr, GL_RG);
+    m_workingTexture.init2D(GL_RGB16F, core->gameState.renderOptions.width,
+                            core->gameState.renderOptions.height, GL_FLOAT, nullptr, GL_RGB);
     m_defaultFboTexture.init2D(GL_RGB16F, core->gameState.renderOptions.width,
                                core->gameState.renderOptions.height, GL_FLOAT, nullptr, GL_RGB);
 
@@ -86,15 +87,13 @@ void Renderer::init() {
     // init shaders
     //-------------
 
-    // TODO: decide if this is ugly or not
-    // the verdict is in: yeah
-
     std::string dir = "../assets/shaders/";
     m_materialShader.init(dir + "material.vert", dir + "material.frag");
     m_skyShader.init(dir + "cube.vert", dir + "sky.frag");
     m_diffuseIrradianceShader.init(dir + "cube.vert", dir + "diffuse_irradiance_convolution.frag");
     m_envMapPrefilterShader.init(dir + "cube.vert", dir + "env_map_prefilter.frag");
     m_brdfLutShader.init(dir + "fullscreen.vert", dir + "brdf_lut.frag");
+    m_tonemapShader.init(dir + "fullscreen.vert", dir + "tonemap.frag");
 
     //----------
     // dummy vao
@@ -208,6 +207,10 @@ void Renderer::init() {
     glGenerateMipmap(GL_TEXTURE_2D);
 
     // set state for normal rendering
+    m_workingFbo.destroy();
+    m_workingFbo.init(core->gameState.renderOptions.width, core->gameState.renderOptions.height);
+    m_workingFbo.bind();
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_workingTexture.id, 0);
     glEnable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -223,6 +226,7 @@ void Renderer::destroy() {
     m_prefilteredEnvCubemap.destroy();
     m_diffuseIrradianceCubemap.destroy();
     m_environmentMap.destroy();
+    m_workingTexture.destroy();
     m_defaultFboTexture.destroy();
 
     m_workingFbo.destroy();
@@ -274,7 +278,6 @@ void Renderer::render() {
         glm::mat4 viewProjectionMatrix = projectionMatrix * viewMatrix;
         m_materialShader.setMat4("uViewProjectionMatrix", viewProjectionMatrix);
         m_materialShader.setVec3("uCameraPosition", core->gameState.camera.position);
-        m_materialShader.setFloat("uExposure", core->gameState.camera.exposure);
 
         // render entities
         for (const Entity &entity : core->gameState.scene.getEntities()) {
@@ -335,7 +338,6 @@ void Renderer::render() {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, m_environmentMap.id);
         m_skyShader.setInt("uEnvMap", 0);
-        m_skyShader.setFloat("uExposure", core->gameState.camera.exposure);
 
         glBindVertexArray(m_dummyVao);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 14);
@@ -345,8 +347,32 @@ void Renderer::render() {
         glDepthFunc(GL_LESS);
     }
 
+    // tonemap
+    {
+        // workingFbo.data = defaultFbo.data
+        m_defaultFbo.blit(m_workingFbo, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+        m_tonemapShader.bind();
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, m_workingTexture.id);
+        m_tonemapShader.setInt("uImage", 0);
+        m_tonemapShader.setFloat("uExposure", core->gameState.camera.exposure);
+
+        glDisable(GL_DEPTH_TEST);
+
+        glBindVertexArray(m_dummyVao);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        glBindVertexArray(0);
+
+        glEnable(GL_DEPTH_TEST);
+    }
+
     // blit to default framebuffer
     m_defaultFbo.blitToDefaultFramebuffer(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+    // bind default framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 RenderStats Renderer::getStats() {

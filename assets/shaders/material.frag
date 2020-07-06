@@ -26,7 +26,6 @@ uniform int uNumPrefilteredEnvMipmapLevels;
 
 uniform vec3 uSunDirection;
 uniform vec3 uCameraPosition;
-uniform float uExposure;
 
 const vec2 inv_atan = vec2(1.0 / (2 * PI), 1.0 / PI);
 vec2 sample_equirectangular_map(vec3 v) {
@@ -101,18 +100,6 @@ vec3 calculate_brdf(vec3 albedo, vec3 N, vec3 V, float metallic, float roughness
     return (Kd * albedo / PI + specular) * Li * max(0, dot(N, Wi));
 }
 
-vec3 tonemap(vec3 x) {
-    x *= uExposure;
-    x = pow(x, vec3(1/2.2));
-
-    const float a = 2.51;
-    const float b = 0.03;
-    const float c = 2.43;
-    const float d = 0.59;
-    const float e = 0.14;
-    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
-}
-
 void main() {
     // TODO: alpha threshold seems a bit high for test models to work, check out textures
     if (texture(uMaterial.albedo, i.uv).a <= 0.1) discard;
@@ -148,5 +135,5 @@ void main() {
 
     color += (diffuse + specular);
 
-    oFragColor = vec4(tonemap(color), texture(uMaterial.albedo, i.uv).a);
+    oFragColor = vec4(color, texture(uMaterial.albedo, i.uv).a);
 }
