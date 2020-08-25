@@ -4,6 +4,36 @@
 #include <GL/gl3w.h>
 #include <vector>
 
+Shader::Shader(const std::string &vertex_path, const std::string &fragment_path) {
+    core->debug("Shader::Shader(" + vertex_path + ", " + fragment_path + ")");
+    init(vertex_path, fragment_path);
+}
+
+Shader::~Shader() {
+    core->debug("Shader::~Shader()");
+    destroy();
+}
+
+void Shader::bind() {
+    glUseProgram(m_programId);
+}
+
+void Shader::setInt(const std::string &name, s32 value) {
+    glUniform1i(getUniformLocation(name), value);
+}
+
+void Shader::setFloat(const std::string &name, f32 value) {
+    glUniform1f(getUniformLocation(name), value);
+}
+
+void Shader::setVec3(const std::string &name, glm::vec3 value) {
+    glUniform3f(getUniformLocation(name), value.x, value.y, value.z);
+}
+
+void Shader::setMat4(const std::string &name, glm::mat4 value) {
+    glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, &value[0][0]);
+}
+
 void Shader::init(const std::string &vertex_path, const std::string &fragment_path) {
     u32 vert = 0, frag = 0;
     m_programId = glCreateProgram();
@@ -44,10 +74,6 @@ void Shader::destroy() {
     m_uniformLocations.clear();
 }
 
-void Shader::bind() {
-    glUseProgram(m_programId);
-}
-
 u32 Shader::compileAndAttach(u32 shader_type, const char *shader_src, const char *debug_shader_path) {
     u32 shader = glCreateShader(shader_type);
     if (shader == 0) {
@@ -73,22 +99,6 @@ u32 Shader::compileAndAttach(u32 shader_type, const char *shader_src, const char
     glAttachShader(m_programId, shader);
 
     return shader;
-}
-
-void Shader::setInt(const std::string &name, s32 value) {
-    glUniform1i(getUniformLocation(name), value);
-}
-
-void Shader::setFloat(const std::string &name, f32 value) {
-    glUniform1f(getUniformLocation(name), value);
-}
-
-void Shader::setVec3(const std::string &name, glm::vec3 value) {
-    glUniform3f(getUniformLocation(name), value.x, value.y, value.z);
-}
-
-void Shader::setMat4(const std::string &name, glm::mat4 value) {
-    glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, &value[0][0]);
 }
 
 u32 Shader::getUniformLocation(const std::string &name) {

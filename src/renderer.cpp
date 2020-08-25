@@ -16,6 +16,32 @@ static void APIENTRY opengl_debug_callback(GLenum source, GLenum type, GLuint id
     }
 }
 
+// TODO: load shaders from resource manager instead
+#define SHADER_DIR "../assets/shaders/"
+
+Renderer::Renderer()
+        : m_materialShader(SHADER_DIR "material.vert", SHADER_DIR "material.frag"),
+          m_skyShader(SHADER_DIR "cube.vert", SHADER_DIR "sky.frag"),
+          m_diffuseIrradianceShader(SHADER_DIR "cube.vert", SHADER_DIR "diffuse_irradiance_convolution.frag"),
+          m_envMapPrefilterShader(SHADER_DIR "cube.vert", SHADER_DIR "env_map_prefilter.frag"),
+          m_brdfLutShader(SHADER_DIR "fullscreen.vert", SHADER_DIR "brdf_lut.frag"),
+          m_tonemapShader(SHADER_DIR "fullscreen.vert", SHADER_DIR "tonemap.frag") {
+    core->debug("Renderer::Renderer()");
+    init();
+    precompute();
+}
+
+Renderer::~Renderer() {
+    core->debug("Renderer::~Renderer()");
+    destroy();
+}
+
+void Renderer::recreate() {
+    destroy();
+    init();
+    precompute();
+}
+
 void Renderer::init() {
     // NOTE: debug output is not a part of core opengl until 4.3, but it's ok
     glEnable(GL_DEBUG_OUTPUT);
@@ -82,18 +108,6 @@ void Renderer::init() {
     m_defaultFbo.bind();
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_defaultFboTexture.id, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    //-------------
-    // init shaders
-    //-------------
-
-    std::string dir = "../assets/shaders/";
-    m_materialShader.init(dir + "material.vert", dir + "material.frag");
-    m_skyShader.init(dir + "cube.vert", dir + "sky.frag");
-    m_diffuseIrradianceShader.init(dir + "cube.vert", dir + "diffuse_irradiance_convolution.frag");
-    m_envMapPrefilterShader.init(dir + "cube.vert", dir + "env_map_prefilter.frag");
-    m_brdfLutShader.init(dir + "fullscreen.vert", dir + "brdf_lut.frag");
-    m_tonemapShader.init(dir + "fullscreen.vert", dir + "tonemap.frag");
 
     //----------
     // dummy vao
@@ -216,12 +230,6 @@ void Renderer::init() {
 }
 
 void Renderer::destroy() {
-    m_brdfLutShader.destroy();
-    m_envMapPrefilterShader.destroy();
-    m_diffuseIrradianceShader.destroy();
-    m_skyShader.destroy();
-    m_materialShader.destroy();
-
     m_brdfLut.destroy();
     m_prefilteredEnvCubemap.destroy();
     m_diffuseIrradianceCubemap.destroy();
@@ -231,6 +239,10 @@ void Renderer::destroy() {
 
     m_workingFbo.destroy();
     m_defaultFbo.destroy();
+}
+
+void Renderer::precompute() {
+    // TODO
 }
 
 void Renderer::render() {

@@ -9,11 +9,8 @@
 /// OpenGL shader
 class Shader {
 public:
-    /// Load shaders from files
-    void init(const std::string &vertex_path, const std::string &fragment_path);
-
-    /// Cleanup shaders
-    void destroy();
+    Shader(const std::string &vertex_path, const std::string &fragment_path);
+    ~Shader();
 
     /// Bind shader for usage
     void bind();
@@ -31,6 +28,12 @@ public:
     void setMat4(const std::string &name, glm::mat4 value);
 
 private:
+    /// Load shaders from files
+    void init(const std::string &vertex_path, const std::string &fragment_path);
+
+    /// Cleanup shaders
+    void destroy();
+
     u32 compileAndAttach(u32 shader_type, const char *shader_src, const char *debug_shader_path);
 
     u32 getUniformLocation(const std::string &name);

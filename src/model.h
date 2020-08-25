@@ -7,11 +7,13 @@
 
 class Model {
 public:
-    void init(const std::string &path);
-
-    void destroy();
+    Model(const std::string &path);
+    Model(std::vector<Mesh> &&meshes);
+    ~Model();
 
     std::vector<Mesh> meshes;
+private:
+    void init(const std::string &path);
 };
 
 #endif //ACORN_MODEL_H

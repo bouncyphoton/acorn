@@ -2,6 +2,47 @@
 #include "core.h"
 #include <GL/gl3w.h>
 
+Mesh::Mesh(std::vector<Vertex> vertices, Material material)
+        : vertices(vertices), material(material) {
+    // Find min and max
+    for (auto &v : vertices) {
+        min = glm::min(min, v.position);
+        max = glm::max(max, v.position);
+    }
+
+    init();
+
+    core->debug("Mesh::Mesh(" + std::to_string(vertices.size()) + " vertices, mat) - #" + std::to_string(vao));
+}
+
+Mesh::Mesh(Mesh &&other)
+        : vao(other.vao),
+          vbo(other.vbo),
+          vertices(std::move(other.vertices)),
+          material(other.material),
+          min(other.min),
+          max(other.max) {
+    other.vao = 0;
+    other.vbo = 0;
+}
+
+Mesh &Mesh::operator=(Mesh &&other) {
+    vao = other.vao;
+    vbo = other.vbo;
+    vertices = std::move(other.vertices);
+    material = other.material;
+    min = other.min;
+    max = other.max;
+    other.vao = 0;
+    other.vbo = 0;
+    return *this;
+}
+
+Mesh::~Mesh() {
+    core->debug("Mesh::~Mesh() - " + std::to_string(vao));
+    destroy();
+}
+
 void Mesh::init() {
     if (vertices.empty()) {
         core->warn("Initializing a mesh with 0 vertices");

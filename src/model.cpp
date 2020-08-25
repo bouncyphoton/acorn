@@ -11,6 +11,20 @@
 #undef min
 #undef max
 
+Model::Model(const std::string &path) {
+    core->debug("Model::Model(" + path + ")");
+    init(path);
+}
+
+Model::Model(std::vector<Mesh> &&meshes)
+        : meshes(std::move(meshes)) {
+    core->debug("Model::Model(" + std::to_string(meshes.size()) + " meshes)");
+}
+
+Model::~Model() {
+    core->debug("Model::~Model()");
+}
+
 void Model::init(const std::string &path) {
     size_t slashIdx = path.rfind('/');
     if (slashIdx == std::string::npos) {
@@ -21,10 +35,10 @@ void Model::init(const std::string &path) {
 
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
+    std::vector<tinyobj::material_t> tinyObjMaterials;
     std::string warn, err;
 
-    bool result = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path.c_str(), dir.c_str(), true);
+    bool result = tinyobj::LoadObj(&attrib, &shapes, &tinyObjMaterials, &warn, &err, path.c_str(), dir.c_str(), true);
     if (!warn.empty()) {
         core->warn(warn);
     }
@@ -38,55 +52,58 @@ void Model::init(const std::string &path) {
     bool hasNormals = !attrib.normals.empty();
 
     // Append default material
-    materials.emplace_back();
+    tinyObjMaterials.emplace_back();
 
     // Each mesh has exactly one material
-    u32 numMeshes = materials.size();
-    meshes.resize(numMeshes);
+    u32 numMeshes = tinyObjMaterials.size();
+    std::vector<Material> meshMaterials;
+    meshMaterials.resize(numMeshes);
+    std::vector<std::vector<Vertex>> meshVertices(numMeshes);
+    meshVertices.resize(numMeshes);
 
     // Set materials
     for (u32 i = 0; i < numMeshes; ++i) {
         // Diffuse texture
-        if (!materials[i].diffuse_texname.empty()) {
-            meshes[i].material.albedoTexture = core->resourceManager.getTexture(
-                    dir + "/" + materials[i].diffuse_texname)->id;
+        if (!tinyObjMaterials[i].diffuse_texname.empty()) {
+            meshMaterials[i].albedoTexture = core->resourceManager.getTexture(
+                    dir + "/" + tinyObjMaterials[i].diffuse_texname)->id;
         } else {
-            meshes[i].material.albedoTexture = core->resourceManager.getBuiltInTexture(
+            meshMaterials[i].albedoTexture = core->resourceManager.getBuiltInTexture(
                     BuiltInTextureEnum::MISSING)->id;
         }
 
         // Normal texture
-        if (!materials[i].normal_texname.empty()) {
-            meshes[i].material.normalTexture = core->resourceManager.getTexture(
-                    dir + "/" + materials[i].normal_texname)->id;
-        } else if (!materials[i].bump_texname.empty()) {
-            meshes[i].material.normalTexture = core->resourceManager.getTexture(
-                    dir + "/" + materials[i].bump_texname)->id;
+        if (!tinyObjMaterials[i].normal_texname.empty()) {
+            meshMaterials[i].normalTexture = core->resourceManager.getTexture(
+                    dir + "/" + tinyObjMaterials[i].normal_texname)->id;
+        } else if (!tinyObjMaterials[i].bump_texname.empty()) {
+            meshMaterials[i].normalTexture = core->resourceManager.getTexture(
+                    dir + "/" + tinyObjMaterials[i].bump_texname)->id;
         }
         {
-            meshes[i].material.normalTexture = core->resourceManager.getBuiltInTexture(
+            meshMaterials[i].normalTexture = core->resourceManager.getBuiltInTexture(
                     BuiltInTextureEnum::NORMAL)->id;
         }
 
         // Metallic texture
-        if (!materials[i].metallic_texname.empty()) {
-            meshes[i].material.metallicTexture = core->resourceManager.getTexture(
-                    dir + "/" + materials[i].metallic_texname)->id;
+        if (!tinyObjMaterials[i].metallic_texname.empty()) {
+            meshMaterials[i].metallicTexture = core->resourceManager.getTexture(
+                    dir + "/" + tinyObjMaterials[i].metallic_texname)->id;
         } else {
-            meshes[i].material.metallicTexture = core->resourceManager.getBuiltInTexture(
+            meshMaterials[i].metallicTexture = core->resourceManager.getBuiltInTexture(
                     BuiltInTextureEnum::WHITE)->id;
         }
-        meshes[i].material.metallicScale = materials[i].metallic;
+        meshMaterials[i].metallicScale = tinyObjMaterials[i].metallic;
 
         // Roughness texture
-        if (!materials[i].roughness_texname.empty()) {
-            meshes[i].material.roughnessTexture = core->resourceManager.getTexture(
-                    dir + "/" + materials[i].roughness_texname)->id;
+        if (!tinyObjMaterials[i].roughness_texname.empty()) {
+            meshMaterials[i].roughnessTexture = core->resourceManager.getTexture(
+                    dir + "/" + tinyObjMaterials[i].roughness_texname)->id;
         } else {
-            meshes[i].material.roughnessTexture = core->resourceManager.getBuiltInTexture(
+            meshMaterials[i].roughnessTexture = core->resourceManager.getBuiltInTexture(
                     BuiltInTextureEnum::WHITE)->id;
         }
-        meshes[i].material.roughnessScale = materials[i].roughness;
+        meshMaterials[i].roughnessScale = tinyObjMaterials[i].roughness;
     }
 
     for (auto &shape : shapes) {
@@ -95,12 +112,12 @@ void Model::init(const std::string &path) {
             u32 matId = shape.mesh.material_ids[f];
 
             // set material to default material if invalid
-            if (matId < 0 || matId >= materials.size()) {
-                matId = materials.size() - 1;
+            if (matId < 0 || matId >= tinyObjMaterials.size()) {
+                matId = tinyObjMaterials.size() - 1;
             }
 
             // acorn meshes are associated w/ materials
-            auto &vertices = meshes[matId].vertices;
+            auto &vertices = meshVertices[matId];
 
             // add vertices to correct mesh
             for (u32 v = 0; v < 3; ++v) {
@@ -128,9 +145,6 @@ void Model::init(const std::string &path) {
                         attrib.texcoords[2 * idx.texcoord_index + 0],
                         attrib.texcoords[2 * idx.texcoord_index + 1]
                 );
-
-                meshes[matId].min = glm::min(meshes[matId].min, vertices.back().position);
-                meshes[matId].max = glm::max(meshes[matId].max, vertices.back().position);
             }
 
             Vertex &v1 = vertices[vertices.size() - 3];
@@ -154,19 +168,10 @@ void Model::init(const std::string &path) {
         }
     }
 
-    for (u32 i = 0; i < meshes.size();) {
-        // Remove meshes with no vertices
-        if (meshes[i].vertices.empty()) {
-            meshes.erase(meshes.begin() + i);
-        } else {
-            meshes[i].init();
-            ++i;
+    // Only add meshes with vertices
+    for (u32 i = 0; i < numMeshes; ++i) {
+        if (!meshVertices[i].empty()) {
+            meshes.emplace_back(meshVertices[i], meshMaterials[i]);
         }
-    }
-}
-
-void Model::destroy() {
-    for (auto &mesh : meshes) {
-        mesh.destroy();
     }
 }

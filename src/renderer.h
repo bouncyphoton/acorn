@@ -14,15 +14,28 @@ struct RenderStats {
 
 class Renderer {
 public:
-    void init();
+    Renderer();
+    ~Renderer();
 
-    void destroy();
+    /// Recreate entire renderer
+    void recreate();
 
+    /// Render scene to default framebuffer
     void render();
 
+    /// Get stats on most recent frame
     RenderStats getStats();
 
 private:
+    /// Create textures, framebuffers, etc.
+    void init();
+
+    /// Cleanup textures, framebuffers, etc.
+    void destroy();
+
+    /// Run pre-compute render passes
+    void precompute();
+
     // textures
     Texture m_defaultFboTexture;
     Texture m_workingTexture;

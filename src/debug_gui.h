@@ -5,11 +5,15 @@
 
 class DebugGui {
 public:
+    DebugGui();
+    ~DebugGui();
+
+    void draw();
+
+private:
     void init();
 
     void destroy();
-
-    void draw();
 };
 
 #endif //ACORN_DEBUG_GUI_H

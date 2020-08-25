@@ -17,9 +17,8 @@ enum class BuiltInModelEnum {
 
 class ResourceManager {
 public:
-    void init();
-
-    void destroy();
+    ResourceManager();
+    ~ResourceManager();
 
     /// Get a model and if not loaded, load
     Model *getModel(const std::string &path);
@@ -34,6 +33,10 @@ public:
     Model *getBuiltInModel(BuiltInModelEnum model);
 
 private:
+    void init();
+
+    void destroy();
+
     std::unordered_map<std::string, Model *> m_models;
     std::unordered_map<std::string, Texture *> m_textures;
     Texture *m_textureBlack;   // (0, 0, 0)
