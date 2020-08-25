@@ -126,12 +126,13 @@ void ResourceManager::init() {
                                             vertices[4],
                                             vertices[5]);
 
+    // TODO: texture 'reference' for materials?
     Material material;
-    material.albedoTexture = m_textureWhite->id;
-    material.normalTexture = m_textureNormal->id;
-    material.metallicTexture = m_textureWhite->id;
+    material.albedoTexture = m_textureWhite->getId();
+    material.normalTexture = m_textureNormal->getId();
+    material.metallicTexture = m_textureWhite->getId();
     material.metallicScale = 0;
-    material.roughnessTexture = m_textureWhite->id;
+    material.roughnessTexture = m_textureWhite->getId();
     material.roughnessScale = 1;
 
     std::vector<Mesh> m;
@@ -145,18 +146,12 @@ void ResourceManager::destroy() {
     }
 
     for (auto &texture : m_textures) {
-        texture.second->destroy();
         delete texture.second;
     }
 
-    // TODO: I don't like the new, init, destroy, delete cycle - maybe move to constructors that fail for most things?
-    m_textureBlack->destroy();
     delete m_textureBlack;
-    m_textureWhite->destroy();
     delete m_textureWhite;
-    m_textureNormal->destroy();
     delete m_textureNormal;
-    m_textureMissing->destroy();
     delete m_textureMissing;
 
     delete m_modelPlane;

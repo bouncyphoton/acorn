@@ -6,6 +6,7 @@
 
 // TODO: framebuffer resize
 
+// TODO: modernize framebuffer
 class Framebuffer {
 public:
     void init(u32 width, u32 height);

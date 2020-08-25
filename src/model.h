@@ -11,9 +11,14 @@ public:
     Model(std::vector<Mesh> &&meshes);
     ~Model();
 
-    std::vector<Mesh> meshes;
+    const std::vector<Mesh> &getMeshes() const {
+        return m_meshes;
+    }
+
 private:
     void init(const std::string &path);
+
+    std::vector<Mesh> m_meshes;
 };
 
 #endif //ACORN_MODEL_H

@@ -8,6 +8,27 @@
 
 #include <stb_image.h>
 
+Texture::Texture() {
+    glGenTextures(1, &m_id);
+    core->debug("Texture::Texture() - #" + std::to_string(m_id));
+}
+
+Texture::Texture(Texture &&other)
+        : m_id(other.m_id) {
+    other.m_id = 0;
+}
+
+Texture &Texture::operator=(Texture &&other) {
+    m_id = other.m_id;
+    other.m_id = 0;
+    return *this;
+}
+
+Texture::~Texture() {
+    core->debug("Texture::~Texture() - #" + std::to_string(m_id));
+    glDeleteTextures(1, &m_id);
+}
+
 void Texture::init(const std::string &path) {
     // TODO: read from some sort of asset metadata file
     // would contain: data format (RGBA, etc.), texture format (2d, cubemap, etc.), is hdr, etc.
@@ -33,8 +54,7 @@ void Texture::init2D(GLenum texture_format, s32 width, s32 height, GLenum data_t
     s32 previouslyBound;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, &previouslyBound);
 
-    glGenTextures(1, &id);
-    glBindTexture(GL_TEXTURE_2D, id);
+    glBindTexture(GL_TEXTURE_2D, m_id);
     glTexImage2D(GL_TEXTURE_2D, 0, texture_format, width, height, 0, data_format, data_type, data);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -50,8 +70,7 @@ void Texture::initCubemap(GLenum texture_format, s32 width, s32 height, GLenum d
     s32 previouslyBound;
     glGetIntegerv(GL_TEXTURE_BINDING_CUBE_MAP, &previouslyBound);
 
-    glGenTextures(1, &id);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, id);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_id);
     for (u32 i = 0; i < 6; ++i) {
         glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, texture_format, width, height, 0, data_format,
                      data_type, data ? data[i] : nullptr);
@@ -66,6 +85,12 @@ void Texture::initCubemap(GLenum texture_format, s32 width, s32 height, GLenum d
     glBindTexture(GL_TEXTURE_CUBE_MAP, previouslyBound);
 }
 
-void Texture::destroy() {
-    glDeleteTextures(1, &id);
+void Texture::bindTex2D(u32 unit) {
+    glActiveTexture(GL_TEXTURE0 + unit);
+    glBindTexture(GL_TEXTURE_2D, m_id);
+}
+
+void Texture::bindCubemap(u32 unit) {
+    glActiveTexture(GL_TEXTURE0 + unit);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_id);
 }

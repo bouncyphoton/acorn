@@ -17,7 +17,7 @@ Model::Model(const std::string &path) {
 }
 
 Model::Model(std::vector<Mesh> &&meshes)
-        : meshes(std::move(meshes)) {
+        : m_meshes(std::move(meshes)) {
     core->debug("Model::Model(" + std::to_string(meshes.size()) + " meshes)");
 }
 
@@ -66,42 +66,42 @@ void Model::init(const std::string &path) {
         // Diffuse texture
         if (!tinyObjMaterials[i].diffuse_texname.empty()) {
             meshMaterials[i].albedoTexture = core->resourceManager.getTexture(
-                    dir + "/" + tinyObjMaterials[i].diffuse_texname)->id;
+                    dir + "/" + tinyObjMaterials[i].diffuse_texname)->getId();
         } else {
             meshMaterials[i].albedoTexture = core->resourceManager.getBuiltInTexture(
-                    BuiltInTextureEnum::MISSING)->id;
+                    BuiltInTextureEnum::MISSING)->getId();
         }
 
         // Normal texture
         if (!tinyObjMaterials[i].normal_texname.empty()) {
             meshMaterials[i].normalTexture = core->resourceManager.getTexture(
-                    dir + "/" + tinyObjMaterials[i].normal_texname)->id;
+                    dir + "/" + tinyObjMaterials[i].normal_texname)->getId();
         } else if (!tinyObjMaterials[i].bump_texname.empty()) {
             meshMaterials[i].normalTexture = core->resourceManager.getTexture(
-                    dir + "/" + tinyObjMaterials[i].bump_texname)->id;
+                    dir + "/" + tinyObjMaterials[i].bump_texname)->getId();
         }
         {
             meshMaterials[i].normalTexture = core->resourceManager.getBuiltInTexture(
-                    BuiltInTextureEnum::NORMAL)->id;
+                    BuiltInTextureEnum::NORMAL)->getId();
         }
 
         // Metallic texture
         if (!tinyObjMaterials[i].metallic_texname.empty()) {
             meshMaterials[i].metallicTexture = core->resourceManager.getTexture(
-                    dir + "/" + tinyObjMaterials[i].metallic_texname)->id;
+                    dir + "/" + tinyObjMaterials[i].metallic_texname)->getId();
         } else {
             meshMaterials[i].metallicTexture = core->resourceManager.getBuiltInTexture(
-                    BuiltInTextureEnum::WHITE)->id;
+                    BuiltInTextureEnum::WHITE)->getId();
         }
         meshMaterials[i].metallicScale = tinyObjMaterials[i].metallic;
 
         // Roughness texture
         if (!tinyObjMaterials[i].roughness_texname.empty()) {
             meshMaterials[i].roughnessTexture = core->resourceManager.getTexture(
-                    dir + "/" + tinyObjMaterials[i].roughness_texname)->id;
+                    dir + "/" + tinyObjMaterials[i].roughness_texname)->getId();
         } else {
             meshMaterials[i].roughnessTexture = core->resourceManager.getBuiltInTexture(
-                    BuiltInTextureEnum::WHITE)->id;
+                    BuiltInTextureEnum::WHITE)->getId();
         }
         meshMaterials[i].roughnessScale = tinyObjMaterials[i].roughness;
     }
@@ -171,7 +171,7 @@ void Model::init(const std::string &path) {
     // Only add meshes with vertices
     for (u32 i = 0; i < numMeshes; ++i) {
         if (!meshVertices[i].empty()) {
-            meshes.emplace_back(meshVertices[i], meshMaterials[i]);
+            m_meshes.emplace_back(meshVertices[i], meshMaterials[i]);
         }
     }
 }
