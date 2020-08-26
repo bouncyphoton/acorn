@@ -49,7 +49,7 @@ Mesh::Mesh(const std::vector<Vertex> &vertices, Material material)
     core->debug("Mesh::Mesh(" + std::to_string(vertices.size()) + " vertices, mat) - #" + std::to_string(m_vao));
 }
 
-Mesh::Mesh(Mesh &&other)
+Mesh::Mesh(Mesh &&other) noexcept
         : m_vao(other.m_vao),
           m_vbo(other.m_vbo),
           m_numVertices(other.m_numVertices),
@@ -60,7 +60,7 @@ Mesh::Mesh(Mesh &&other)
     other.m_vbo = 0;
 }
 
-Mesh &Mesh::operator=(Mesh &&other) {
+Mesh &Mesh::operator=(Mesh &&other) noexcept {
     m_vao = other.m_vao;
     m_vbo = other.m_vbo;
     m_numVertices = other.m_numVertices;

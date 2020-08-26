@@ -10,8 +10,8 @@
 class Mesh {
 public:
     Mesh(const std::vector<Vertex> &vertices, Material material);
-    Mesh(Mesh &&other);
-    Mesh &operator=(Mesh &&other);
+    Mesh(Mesh &&other) noexcept;
+    Mesh &operator=(Mesh &&other) noexcept;
     ~Mesh();
 
     void draw() const;

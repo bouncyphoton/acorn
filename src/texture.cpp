@@ -13,12 +13,12 @@ Texture::Texture() {
     core->debug("Texture::Texture() - #" + std::to_string(m_id));
 }
 
-Texture::Texture(Texture &&other)
+Texture::Texture(Texture &&other) noexcept
         : m_id(other.m_id) {
     other.m_id = 0;
 }
 
-Texture &Texture::operator=(Texture &&other) {
+Texture &Texture::operator=(Texture &&other) noexcept {
     m_id = other.m_id;
     other.m_id = 0;
     return *this;

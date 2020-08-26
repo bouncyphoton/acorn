@@ -7,8 +7,8 @@
 
 class Model {
 public:
-    Model(const std::string &path);
-    Model(std::vector<Mesh> &&meshes);
+    explicit Model(const std::string &path);
+    explicit Model(std::vector<Mesh> &&meshes);
     ~Model();
 
     const std::vector<Mesh> &getMeshes() const {

@@ -8,8 +8,8 @@
 class Texture {
 public:
     Texture();
-    Texture(Texture &&other);
-    Texture &operator=(Texture &&other);
+    Texture(Texture &&other) noexcept;
+    Texture &operator=(Texture &&other) noexcept;
     ~Texture();
 
     /// Init a texture from a file
