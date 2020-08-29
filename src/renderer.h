@@ -37,12 +37,12 @@ private:
     void precompute();
 
     // textures
-    Texture m_defaultFboTexture;
-    Texture m_workingTexture;
-    Texture m_environmentMap;
-    Texture m_diffuseIrradianceCubemap;
-    Texture m_prefilteredEnvCubemap;
-    Texture m_brdfLut;
+    Texture2D m_defaultFboTexture;
+    Texture2D m_workingTexture;
+    TextureCubemap m_environmentMap;
+    TextureCubemap m_diffuseIrradianceCubemap;
+    TextureCubemap m_prefilteredEnvCubemap;
+    Texture2D m_brdfLut;
 
     u32 m_numPrefilteredEnvMipmapLevels;
 

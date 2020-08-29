@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "core.h"
+#include "texture.h"
 #include <fstream>
 #include <sstream>
 #include <iomanip>
@@ -49,5 +50,41 @@ namespace utils {
 
         v3.tangent = glm::normalize(tangent - v3.normal * glm::dot(v3.normal, tangent));
         v3.biTangent = biTangent;
+    }
+
+    void get_format_info(TextureFormatEnum format, u32 *texture_format, u32 *data_format, u32 *data_type) {
+        *texture_format = 0;
+        *data_format = 0;
+        *data_type = 0;
+
+        switch (format) {
+            case TextureFormatEnum::RGB8:
+                *texture_format = GL_RGB;
+                *data_format = GL_RGB;
+                *data_type = GL_UNSIGNED_BYTE;
+                break;
+            case TextureFormatEnum::RGBA8:
+                *texture_format = GL_RGBA;
+                *data_format = GL_RGBA;
+                *data_type = GL_UNSIGNED_BYTE;
+                break;
+            case TextureFormatEnum::RG16F:
+                *texture_format = GL_RG16F;
+                *data_format = GL_RG;
+                *data_type = GL_FLOAT;
+                break;
+            case TextureFormatEnum::RGB16F:
+                *texture_format = GL_RGB16F;
+                *data_format = GL_RGB;
+                *data_type = GL_FLOAT;
+                break;
+            case TextureFormatEnum::RGBA16F:
+                *texture_format = GL_RGBA16F;
+                *data_format = GL_RGBA;
+                *data_type = GL_FLOAT;
+                break;
+            default:
+                core->fatal("Tried to get info for unknown format: " + std::to_string(static_cast<u32>(format)));
+        }
     }
 }

@@ -1,6 +1,5 @@
 #include "renderer.h"
 #include "types.h"
-#include "shader.h"
 #include "utils.h"
 #include "core.h"
 #include "constants.h"
@@ -52,10 +51,6 @@ void Renderer::init() {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-    // TODO: figure out why enabling GL_BLEND breaks rendering to cubemap framebuffer for diffuse convolve
-//    glEnable(GL_BLEND);
-//    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     //--------------
     // init textures
     //--------------
@@ -71,28 +66,22 @@ void Renderer::init() {
             stbi_loadf("../assets/env/pz.hdr", &w, &h, nullptr, 3),
             stbi_loadf("../assets/env/nz.hdr", &w, &h, nullptr, 3)
     };
-    m_environmentMap.initCubemap(GL_RGB16F, w, h, GL_FLOAT, data, GL_RGB);
+    if (w != h) {
+        core->fatal("skybox side textures are not square");
+    }
+    m_environmentMap.setImage(w, TextureFormatEnum::RGB16F, data);
     for (int i = 0; i < 6; ++i) {
         stbi_image_free(data[i]);
     }
     stbi_set_flip_vertically_on_load(1);
 
-    m_diffuseIrradianceCubemap.initCubemap(GL_RGB16F,
-                                           consts::DIFFUSE_IRRADIANCE_TEXTURE_SIZE,
-                                           consts::DIFFUSE_IRRADIANCE_TEXTURE_SIZE,
-                                           GL_FLOAT, nullptr, GL_RGB);
-    m_prefilteredEnvCubemap.initCubemap(GL_RGB16F,
-                                        consts::PREFILTERED_ENVIRONMENT_MAP_TEXTURE_SIZE,
-                                        consts::PREFILTERED_ENVIRONMENT_MAP_TEXTURE_SIZE,
-                                        GL_FLOAT, nullptr, GL_RGB);
-    m_brdfLut.init2D(GL_RG16F,
-                     consts::BRDF_LUT_TEXTURE_SIZE,
-                     consts::BRDF_LUT_TEXTURE_SIZE,
-                     GL_FLOAT, nullptr, GL_RG);
-    m_workingTexture.init2D(GL_RGB16F, core->gameState.renderOptions.width,
-                            core->gameState.renderOptions.height, GL_FLOAT, nullptr, GL_RGB);
-    m_defaultFboTexture.init2D(GL_RGB16F, core->gameState.renderOptions.width,
-                               core->gameState.renderOptions.height, GL_FLOAT, nullptr, GL_RGB);
+    m_diffuseIrradianceCubemap.setImage(consts::DIFFUSE_IRRADIANCE_TEXTURE_SIZE, TextureFormatEnum::RGB16F);
+    m_prefilteredEnvCubemap.setImage(consts::PREFILTERED_ENVIRONMENT_MAP_TEXTURE_SIZE, TextureFormatEnum::RGB16F);
+    m_brdfLut.setImage(consts::BRDF_LUT_TEXTURE_SIZE, consts::BRDF_LUT_TEXTURE_SIZE, TextureFormatEnum::RG16F);
+    m_workingTexture.setImage(core->gameState.renderOptions.width, core->gameState.renderOptions.height,
+                              TextureFormatEnum::RGB16F);
+    m_defaultFboTexture.setImage(core->gameState.renderOptions.width, core->gameState.renderOptions.height,
+                                 TextureFormatEnum::RGB16F);
 
     //----------
     // init fbos
@@ -117,11 +106,14 @@ void Renderer::init() {
     if (m_dummyVao == 0) {
         core->fatal("Failed to generate dummy VAO");
     }
+}
 
-    //-----------
-    // precompute
-    //-----------
+void Renderer::destroy() {
+    m_workingFbo.destroy();
+    m_defaultFbo.destroy();
+}
 
+void Renderer::precompute() {
     // set state for precomputations
     m_workingFbo.bind();
     glDisable(GL_DEPTH_TEST);
@@ -229,15 +221,6 @@ void Renderer::init() {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Renderer::destroy() {
-    m_workingFbo.destroy();
-    m_defaultFbo.destroy();
-}
-
-void Renderer::precompute() {
-    // TODO
-}
-
 void Renderer::render() {
     // bind default fbo
     m_defaultFbo.bind();
@@ -252,19 +235,17 @@ void Renderer::render() {
 
         u32 textureIdx = 0;
 
-        // TODO: take tonemapping out of sky.frag and material.frag to separate pass to keep everything linear
-
-        m_diffuseIrradianceCubemap.bindCubemap(textureIdx);
+        m_diffuseIrradianceCubemap.bind(textureIdx);
         m_materialShader.setInt("uDiffuseIrradianceMap", textureIdx);
         ++textureIdx;
 
-        m_prefilteredEnvCubemap.bindCubemap(textureIdx);
+        m_prefilteredEnvCubemap.bind(textureIdx);
         m_materialShader.setInt("uPrefilteredEnvironmentMap", textureIdx);
         ++textureIdx;
 
         m_materialShader.setInt("uNumPrefilteredEnvMipmapLevels", m_numPrefilteredEnvMipmapLevels);
 
-        m_brdfLut.bindTex2D(textureIdx);
+        m_brdfLut.bind(textureIdx);
         m_materialShader.setInt("uBrdfLut", textureIdx);
         ++textureIdx;
 
@@ -336,7 +317,7 @@ void Renderer::render() {
                                         core->gameState.camera.lookAt - core->gameState.camera.position,
                                         glm::vec3(0, 1, 0)));
 
-        m_environmentMap.bindCubemap(0);
+        m_environmentMap.bind(0);
         m_skyShader.setInt("uEnvMap", 0);
 
         glBindVertexArray(m_dummyVao);
@@ -354,7 +335,7 @@ void Renderer::render() {
 
         m_tonemapShader.bind();
 
-        m_workingTexture.bindTex2D(0);
+        m_workingTexture.bind(0);
         m_tonemapShader.setInt("uImage", 0);
         m_tonemapShader.setFloat("uExposure", core->gameState.camera.exposure);
 

@@ -1,6 +1,10 @@
 #include "resource_manager.h"
 #include "core.h"
 #include "utils.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_FAILURE_USERMSG
+
 #include <stb_image.h>
 
 ResourceManager::ResourceManager() {
@@ -35,9 +39,19 @@ Texture *ResourceManager::getTexture(const std::string &path) {
 
     // Try to load texture
     core->info("Loading texture '" + path + "'");
-    Texture *texture = new Texture();
-    texture->init(path);
+
+    s32 width, height, channels;
+    u8 *data = stbi_load(path.c_str(), &width, &height, &channels, 4);
+    if (!data) {
+        core->fatal("Failed to load image '" + path + "'\n " + stbi_failure_reason());
+    }
+
+    Texture2D *texture = new Texture2D();
+    texture->setImage(width, height, TextureFormatEnum::RGBA8, data);
     m_textures.emplace(path, texture);
+
+    stbi_image_free(data);
+
     return texture;
 }
 
@@ -73,23 +87,23 @@ void ResourceManager::init() {
 
     // Load built-in textures
     u8 black[4] = {0, 0, 0, 255};
-    m_textureBlack = new Texture();
-    m_textureBlack->init2D(GL_RGBA, 1, 1, GL_UNSIGNED_BYTE, black, GL_RGBA);
+    m_textureBlack = new Texture2D();
+    m_textureBlack->setImage(1, 1, TextureFormatEnum::RGBA8, black);
 
     u8 white[4] = {255, 255, 255, 255};
-    m_textureWhite = new Texture();
-    m_textureWhite->init2D(GL_RGBA, 1, 1, GL_UNSIGNED_BYTE, white, GL_RGBA);
+    m_textureWhite = new Texture2D();
+    m_textureWhite->setImage(1, 1, TextureFormatEnum::RGBA8, white);
 
     u8 normal[4] = {127, 127, 255, 255};
-    m_textureNormal = new Texture();
-    m_textureNormal->init2D(GL_RGBA, 1, 1, GL_UNSIGNED_BYTE, normal, GL_RGBA);
+    m_textureNormal = new Texture2D();
+    m_textureNormal->setImage(1, 1, TextureFormatEnum::RGBA8, normal);
 
     u8 missing[4 * 4] = {255, 0, 255, 255,
                          0, 0, 0, 255,
                          255, 0, 255, 255,
                          0, 0, 0, 255};
-    m_textureMissing = new Texture();
-    m_textureMissing->init2D(GL_RGBA, 2, 2, GL_UNSIGNED_BYTE, missing, GL_RGBA);
+    m_textureMissing = new Texture2D();
+    m_textureMissing->setImage(1, 1, TextureFormatEnum::RGBA8, missing);
 
     // Load built-in models
     glm::vec3 norm = glm::vec3(0, 1, 0);

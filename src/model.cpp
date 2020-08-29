@@ -18,7 +18,7 @@ Model::Model(const std::string &path) {
 
 Model::Model(std::vector<Mesh> &&meshes)
         : m_meshes(std::move(meshes)) {
-    core->debug("Model::Model(" + std::to_string(meshes.size()) + " meshes)");
+    core->debug("Model::Model(" + std::to_string(m_meshes.size()) + " meshes)");
 }
 
 Model::~Model() {

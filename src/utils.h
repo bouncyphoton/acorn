@@ -1,8 +1,11 @@
 #ifndef ACORN_UTILS_H
 #define ACORN_UTILS_H
 
+#include "types.h"
 #include "vertex.h"
 #include <string>
+
+enum class TextureFormatEnum;
 
 namespace utils {
     /// Try to load an ascii file as a string
@@ -13,6 +16,9 @@ namespace utils {
 
     /// Generate bi-tangent and tangent vectors for vertices of a triangle
     void calculate_tangent_and_bi_tangent(Vertex &v1, Vertex &v2, Vertex &v3);
+
+    /// Get OpenGL information for a format
+    void get_format_info(TextureFormatEnum format, u32 *texture_format, u32 *data_format, u32 *data_type);
 }
 
 #endif //ACORN_UTILS_H
