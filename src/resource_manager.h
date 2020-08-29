@@ -40,10 +40,10 @@ private:
     // TODO: remove unnecessary pointers
     std::unordered_map<std::string, Model *> m_models;
     std::unordered_map<std::string, Texture *> m_textures;
-    Texture2D *m_textureBlack;   // (0, 0, 0)
-    Texture2D *m_textureWhite;   // (255, 255, 255)
-    Texture2D *m_textureNormal;  // (127, 127, 255)
-    Texture2D *m_textureMissing; // (0, 0, 0) (255, 0, 255) pattern
+    Texture2D m_textureBlack;   // (0, 0, 0)
+    Texture2D m_textureWhite;   // (255, 255, 255)
+    Texture2D m_textureNormal;  // (127, 127, 255)
+    Texture2D m_textureMissing; // (0, 0, 0) (255, 0, 255) pattern
     Model *m_modelPlane; // Unit plane [-1, 1] with a +y normal
 };
 

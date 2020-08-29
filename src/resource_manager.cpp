@@ -58,16 +58,16 @@ Texture *ResourceManager::getTexture(const std::string &path) {
 Texture *ResourceManager::getBuiltInTexture(BuiltInTextureEnum tex) {
     switch (tex) {
         case BuiltInTextureEnum::BLACK:
-            return m_textureBlack;
+            return &m_textureBlack;
         case BuiltInTextureEnum::WHITE:
-            return m_textureWhite;
+            return &m_textureWhite;
         case BuiltInTextureEnum::NORMAL:
-            return m_textureNormal;
+            return &m_textureNormal;
         default:
             core->warn("Unhandled case for getting a built in texture: " +
                        std::to_string(static_cast<int>(tex)));
         case BuiltInTextureEnum::MISSING:
-            return m_textureMissing;
+            return &m_textureMissing;
     }
 }
 
@@ -87,23 +87,19 @@ void ResourceManager::init() {
 
     // Load built-in textures
     u8 black[4] = {0, 0, 0, 255};
-    m_textureBlack = new Texture2D();
-    m_textureBlack->setImage(1, 1, TextureFormatEnum::RGBA8, black);
+    m_textureBlack.setImage(1, 1, TextureFormatEnum::RGBA8, black);
 
     u8 white[4] = {255, 255, 255, 255};
-    m_textureWhite = new Texture2D();
-    m_textureWhite->setImage(1, 1, TextureFormatEnum::RGBA8, white);
+    m_textureWhite.setImage(1, 1, TextureFormatEnum::RGBA8, white);
 
     u8 normal[4] = {127, 127, 255, 255};
-    m_textureNormal = new Texture2D();
-    m_textureNormal->setImage(1, 1, TextureFormatEnum::RGBA8, normal);
+    m_textureNormal.setImage(1, 1, TextureFormatEnum::RGBA8, normal);
 
     u8 missing[4 * 4] = {255, 0, 255, 255,
                          0, 0, 0, 255,
                          255, 0, 255, 255,
                          0, 0, 0, 255};
-    m_textureMissing = new Texture2D();
-    m_textureMissing->setImage(1, 1, TextureFormatEnum::RGBA8, missing);
+    m_textureMissing.setImage(1, 1, TextureFormatEnum::RGBA8, missing);
 
     // Load built-in models
     glm::vec3 norm = glm::vec3(0, 1, 0);
@@ -142,11 +138,11 @@ void ResourceManager::init() {
 
     // TODO: texture 'reference' for materials?
     Material material;
-    material.albedoTexture = m_textureWhite->getId();
-    material.normalTexture = m_textureNormal->getId();
-    material.metallicTexture = m_textureWhite->getId();
+    material.albedoTexture = m_textureWhite.getId();
+    material.normalTexture = m_textureNormal.getId();
+    material.metallicTexture = m_textureWhite.getId();
     material.metallicScale = 0;
-    material.roughnessTexture = m_textureWhite->getId();
+    material.roughnessTexture = m_textureWhite.getId();
     material.roughnessScale = 1;
 
     std::vector<Mesh> m;
@@ -162,11 +158,6 @@ void ResourceManager::destroy() {
     for (auto &texture : m_textures) {
         delete texture.second;
     }
-
-    delete m_textureBlack;
-    delete m_textureWhite;
-    delete m_textureNormal;
-    delete m_textureMissing;
 
     delete m_modelPlane;
 }
