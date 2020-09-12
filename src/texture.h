@@ -34,6 +34,18 @@ public:
     void bind(u32 unit) override;
 
     void setImage(int width, int height, TextureFormatEnum format, void *data = nullptr);
+
+    u32 getWidth() const {
+        return m_width;
+    }
+
+    u32 getHeight() const {
+        return m_height;
+    }
+
+private:
+    u32 m_width;
+    u32 m_height;
 };
 
 class TextureCubemap : public Texture {
@@ -44,6 +56,13 @@ public:
     void bind(u32 unit) override;
 
     void setImage(int side_length, TextureFormatEnum format, void *data[6] = nullptr);
+
+    u32 getSideLength() const {
+        return m_sideLength;
+    }
+
+private:
+    u32 m_sideLength;
 };
 
 #endif //ACORN_TEXTURE_H

@@ -5,6 +5,9 @@
 
 Texture::Texture() {
     glGenTextures(1, &m_id);
+    if (m_id == 0) {
+        core->fatal("Failed to create Texture");
+    }
     core->debug("Texture::Texture() - #" + std::to_string(m_id));
 }
 
@@ -30,6 +33,9 @@ void Texture2D::bind(u32 unit) {
 }
 
 void Texture2D::setImage(int width, int height, TextureFormatEnum format, void *data) {
+    m_width = width;
+    m_height = height;
+
     s32 previouslyBound;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, &previouslyBound);
 
@@ -53,6 +59,8 @@ void TextureCubemap::bind(u32 unit) {
 }
 
 void TextureCubemap::setImage(int side_length, TextureFormatEnum format, void **data) {
+    m_sideLength = side_length;
+
     s32 previouslyBound;
     glGetIntegerv(GL_TEXTURE_BINDING_CUBE_MAP, &previouslyBound);
 

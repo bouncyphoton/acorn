@@ -12,6 +12,9 @@ public:
     Shader(const std::string &vertex_path, const std::string &fragment_path);
     ~Shader();
 
+    /// Reload shaders from files
+    void reload();
+
     /// Bind shader for usage
     void bind();
 
@@ -29,7 +32,7 @@ public:
 
 private:
     /// Load shaders from files
-    void init(const std::string &vertex_path, const std::string &fragment_path);
+    void init();
 
     /// Cleanup shaders
     void destroy();
@@ -40,6 +43,8 @@ private:
 
     u32 m_programId = 0;
     std::unordered_map<std::string, u32> m_uniformLocations;
+    std::string m_vertexPath;
+    std::string m_fragmentPath;
 };
 
 #endif //ACORN_SHADER_H

@@ -32,13 +32,6 @@ Renderer::Renderer()
 
 Renderer::~Renderer() {
     core->debug("Renderer::~Renderer()");
-    destroy();
-}
-
-void Renderer::recreate() {
-    destroy();
-    init();
-    precompute();
 }
 
 void Renderer::init() {
@@ -87,16 +80,8 @@ void Renderer::init() {
     // init fbos
     //----------
 
-    m_workingFbo.init(w, h);
-    m_defaultFbo.init(core->gameState.renderOptions.width, core->gameState.renderOptions.height);
-
-    if (!m_defaultFbo.id || !m_workingFbo.id) {
-        core->fatal("Failed to create FBOs");
-    }
-
-    m_defaultFbo.bind();
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_defaultFboTexture.getId(), 0);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    m_workingFbo.attachTexture(m_workingTexture);
+    m_defaultFbo.attachTexture(m_defaultFboTexture);
 
     //----------
     // dummy vao
@@ -106,11 +91,6 @@ void Renderer::init() {
     if (m_dummyVao == 0) {
         core->fatal("Failed to generate dummy VAO");
     }
-}
-
-void Renderer::destroy() {
-    m_workingFbo.destroy();
-    m_defaultFbo.destroy();
 }
 
 void Renderer::precompute() {
@@ -144,8 +124,7 @@ void Renderer::precompute() {
     for (u32 face = 0; face < 6; ++face) {
         // set current face as output color attachment
         m_diffuseIrradianceShader.setMat4("uViewProjectionMatrix", proj * views[face]);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + face,
-                               m_diffuseIrradianceCubemap.getId(), 0);
+        m_workingFbo.attachTexture(m_diffuseIrradianceCubemap, GL_TEXTURE_CUBE_MAP_POSITIVE_X + face);
         glClear(GL_COLOR_BUFFER_BIT);
 
         // draw cube
@@ -183,8 +162,7 @@ void Renderer::precompute() {
         for (u32 face = 0; face < 6; ++face) {
             // set current face as output color attachment
             m_envMapPrefilterShader.setMat4("uViewProjectionMatrix", proj * views[face]);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + face,
-                                   m_prefilteredEnvCubemap.getId(), level);
+            m_workingFbo.attachTexture(m_prefilteredEnvCubemap, GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, level);
             glClear(GL_COLOR_BUFFER_BIT);
 
             // draw cube
@@ -199,8 +177,8 @@ void Renderer::precompute() {
     //---------
 
     m_brdfLutShader.bind();
+    m_workingFbo.attachTexture(m_brdfLut);
     glViewport(0, 0, consts::BRDF_LUT_TEXTURE_SIZE, consts::BRDF_LUT_TEXTURE_SIZE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_brdfLut.getId(), 0);
     glClear(GL_COLOR_BUFFER_BIT);
 
     // draw quad
@@ -213,10 +191,7 @@ void Renderer::precompute() {
     glGenerateMipmap(GL_TEXTURE_2D);
 
     // set state for normal rendering
-    m_workingFbo.destroy();
-    m_workingFbo.init(core->gameState.renderOptions.width, core->gameState.renderOptions.height);
-    m_workingFbo.bind();
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_workingTexture.getId(), 0);
+    m_workingFbo.attachTexture(m_workingTexture);
     glEnable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -353,6 +328,18 @@ void Renderer::render() {
 
     // bind default framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // unbind shaders
+    glUseProgram(0);
+}
+
+void Renderer::reloadShaders() {
+    m_materialShader.reload();
+    m_skyShader.reload();
+    m_diffuseIrradianceShader.reload();
+    m_envMapPrefilterShader.reload();
+    m_brdfLutShader.reload();
+    m_tonemapShader.reload();
 }
 
 RenderStats Renderer::getStats() {

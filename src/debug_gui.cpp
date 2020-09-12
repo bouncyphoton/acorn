@@ -48,8 +48,8 @@ void DebugGui::draw() {
         ImGui::DragFloat3("look at", &core->gameState.camera.lookAt[0], 0.1f);
         ImGui::SliderFloat("exposure", &core->gameState.camera.exposure, 0.0f, 100.0f, "%.3f", 2);
 
-        if (ImGui::Button("recreate renderer")) {
-            core->renderer.recreate();
+        if (ImGui::Button("reload shaders")) {
+            core->renderer.reloadShaders();
         }
     }
     ImGui::End();

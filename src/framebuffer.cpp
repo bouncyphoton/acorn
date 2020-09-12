@@ -1,49 +1,89 @@
 #include "framebuffer.h"
 #include "core.h"
 
-void Framebuffer::init(u32 width, u32 height) {
-    m_width = width;
-    m_height = height;
+Framebuffer::Framebuffer() {
+    s32 previouslyBound;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &previouslyBound);
+
+    glGenFramebuffers(1, &m_id);
+    if (m_id == 0) {
+        core->fatal("Failed to create Framebuffer");
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, m_id);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, previouslyBound);
+    core->debug("Framebuffer::Framebuffer() - #" + std::to_string(m_id));
+}
+
+Framebuffer::Framebuffer(Framebuffer &&other) noexcept
+        : m_id(other.m_id), m_depthRenderbuffer(other.m_depthRenderbuffer),
+          m_width(other.m_width), m_height(other.m_height) {
+    other.m_id = 0;
+}
+
+Framebuffer &Framebuffer::operator=(Framebuffer &&other) noexcept {
+    m_id = other.m_id;
+    m_depthRenderbuffer = other.m_depthRenderbuffer;
+    m_width = other.m_width;
+    m_height = other.m_height;
+
+    other.m_id = 0;
+    other.m_depthRenderbuffer = 0;
+    return *this;
+}
+
+Framebuffer::~Framebuffer() {
+    core->debug("Framebuffer::~Framebuffer() - #" + std::to_string(m_id));
+    glDeleteRenderbuffers(1, &m_depthRenderbuffer);
+    glDeleteFramebuffers(1, &m_id);
+}
+
+void Framebuffer::attachTexture(const Texture2D &texture) {
+    m_width = texture.getWidth();
+    m_height = texture.getHeight();
 
     s32 previouslyBound;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &previouslyBound);
 
-    // generate
-    glGenFramebuffers(1, &id);
-    glBindFramebuffer(GL_FRAMEBUFFER, id);
+    bind();
 
-    // attach draw buffers
+    // Set texture
     glDrawBuffer(GL_COLOR_ATTACHMENT0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture.getId(), 0);
 
-    // depth renderbuffer
-    glGenRenderbuffers(1, &m_depthRenderbuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, m_depthRenderbuffer);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_depthRenderbuffer);
-
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        core->fatal("Framebuffer is incomplete");
-    }
+    handleRenderbufferCreation();
 
     glBindFramebuffer(GL_FRAMEBUFFER, previouslyBound);
 }
 
-void Framebuffer::destroy() {
-    glDeleteRenderbuffers(1, &m_depthRenderbuffer);
-    glDeleteFramebuffers(1, &id);
+void Framebuffer::attachTexture(const TextureCubemap &texture, u32 target, u32 level) {
+    m_width = texture.getSideLength();
+    m_height = texture.getSideLength();
+
+    s32 previouslyBound;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &previouslyBound);
+
+    bind();
+
+    // Set texture
+    glDrawBuffer(GL_COLOR_ATTACHMENT0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texture.getId(), level);
+
+    handleRenderbufferCreation();
+
+    glBindFramebuffer(GL_FRAMEBUFFER, previouslyBound);
 }
 
 void Framebuffer::bind() {
-    glBindFramebuffer(GL_FRAMEBUFFER, id);
-    glViewport(0, 0, m_width, m_height);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_id);
 }
 
 void Framebuffer::blit(Framebuffer &fbo, u32 mask, u32 filter) {
     s32 previouslyBound;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &previouslyBound);
 
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, id);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo.id);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, m_id);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo.m_id);
     glBlitFramebuffer(0, 0, m_width, m_height, 0, 0, fbo.m_width, fbo.m_height, mask, filter);
 
     glBindFramebuffer(GL_FRAMEBUFFER, previouslyBound);
@@ -56,9 +96,30 @@ void Framebuffer::blitToDefaultFramebuffer(u32 mask, u32 filter) {
     GLint dims[4] = {0};
     glGetIntegerv(GL_VIEWPORT, dims);
 
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, id);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, m_id);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBlitFramebuffer(0, 0, m_width, m_height, dims[0], dims[1], dims[2], dims[3], mask, filter);
 
     glBindFramebuffer(GL_FRAMEBUFFER, previouslyBound);
+}
+
+void Framebuffer::handleRenderbufferCreation() {
+    // Delete old renderbuffer if it exists
+    glDeleteRenderbuffers(1, &m_depthRenderbuffer);
+    m_depthRenderbuffer = 0;
+
+    // Create depth renderbuffer for this texture
+    glGenRenderbuffers(1, &m_depthRenderbuffer);
+    if (m_depthRenderbuffer == 0) {
+        core->fatal("Failed to generate depth renderbuffer for framebuffer #" + std::to_string(m_id));
+    }
+    glBindRenderbuffer(GL_RENDERBUFFER, m_depthRenderbuffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, m_width, m_height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_depthRenderbuffer);
+
+    // Verify framebuffer completeness
+    u32 status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (status != GL_FRAMEBUFFER_COMPLETE) {
+        core->fatal("Framebuffer #" + std::to_string(m_id) + " is incomplete: " + std::to_string(status));
+    }
 }
