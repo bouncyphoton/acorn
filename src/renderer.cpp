@@ -117,8 +117,7 @@ void Renderer::precompute() {
     glViewport(0, 0, consts::DIFFUSE_IRRADIANCE_TEXTURE_SIZE, consts::DIFFUSE_IRRADIANCE_TEXTURE_SIZE);
 
     // set environment map uniform
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, m_environmentMap.getId());
+    m_environmentMap.bind(0);
     m_diffuseIrradianceShader.setInt("uEnvMap", 0);
 
     for (u32 face = 0; face < 6; ++face) {
@@ -128,13 +127,11 @@ void Renderer::precompute() {
         glClear(GL_COLOR_BUFFER_BIT);
 
         // draw cube
-        glBindVertexArray(m_dummyVao);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 14);
-        glBindVertexArray(0);
+        drawNVertices(14);
     }
 
     // update mipmaps for diffuse irradiance cubemap
-    glBindTexture(GL_TEXTURE_CUBE_MAP, m_diffuseIrradianceCubemap.getId());
+    m_diffuseIrradianceCubemap.bind(0);
     glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
     //--------------------------
@@ -144,8 +141,7 @@ void Renderer::precompute() {
     m_envMapPrefilterShader.bind();
 
     // set environment map uniform
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, m_environmentMap.getId());
+    m_environmentMap.bind(0);
     m_envMapPrefilterShader.setInt("uEnvMap", 0);
 
     // calculate mipmap levels
@@ -166,9 +162,7 @@ void Renderer::precompute() {
             glClear(GL_COLOR_BUFFER_BIT);
 
             // draw cube
-            glBindVertexArray(m_dummyVao);
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, 14);
-            glBindVertexArray(0);
+            drawNVertices(14);
         }
     }
 
@@ -182,12 +176,10 @@ void Renderer::precompute() {
     glClear(GL_COLOR_BUFFER_BIT);
 
     // draw quad
-    glBindVertexArray(m_dummyVao);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glBindVertexArray(0);
+    drawNVertices(4);
 
     // update mipmaps for brdf lut
-    glBindTexture(GL_TEXTURE_2D, m_brdfLut.getId());
+    m_brdfLut.bind(0);
     glGenerateMipmap(GL_TEXTURE_2D);
 
     // set state for normal rendering
@@ -224,6 +216,8 @@ void Renderer::render() {
         m_materialShader.setInt("uBrdfLut", textureIdx);
         ++textureIdx;
 
+        const u32 startTextureIdx = textureIdx;
+
         // sun
         m_materialShader.setVec3("uSunDirection", core->gameState.scene.sunDirection);
 
@@ -247,6 +241,8 @@ void Renderer::render() {
 
             // render each mesh in model
             for (auto &mesh : entity.model->getMeshes()) {
+                textureIdx = startTextureIdx;
+
                 glActiveTexture(GL_TEXTURE0 + textureIdx);
                 glBindTexture(GL_TEXTURE_2D, mesh.getMaterial().albedoTexture);
                 m_materialShader.setInt("uMaterial.albedo", textureIdx);
@@ -295,9 +291,7 @@ void Renderer::render() {
         m_environmentMap.bind(0);
         m_skyShader.setInt("uEnvMap", 0);
 
-        glBindVertexArray(m_dummyVao);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 14);
-        glBindVertexArray(0);
+        drawNVertices(14);
 
         glDepthMask(GL_TRUE);
         glDepthFunc(GL_LESS);
@@ -316,9 +310,7 @@ void Renderer::render() {
 
         glDisable(GL_DEPTH_TEST);
 
-        glBindVertexArray(m_dummyVao);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glBindVertexArray(0);
+        drawNVertices(4);
 
         glEnable(GL_DEPTH_TEST);
     }
@@ -344,4 +336,10 @@ void Renderer::reloadShaders() {
 
 RenderStats Renderer::getStats() {
     return m_renderStats;
+}
+
+void Renderer::drawNVertices(u32 n) const {
+    glBindVertexArray(m_dummyVao);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, n);
+    glBindVertexArray(0);
 }

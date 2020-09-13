@@ -33,6 +33,8 @@ private:
     /// Run pre-compute render passes
     void precompute();
 
+    void drawNVertices(u32 n) const;
+
     // textures
     Texture2D m_defaultFboTexture;
     Texture2D m_workingTexture;
