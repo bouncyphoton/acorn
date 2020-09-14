@@ -1,24 +1,40 @@
 #include "utils.h"
 #include "core.h"
 #include "texture.h"
+
+#define STB_INCLUDE_IMPLEMENTATION
+#define STB_INCLUDE_LINE_GLSL
+
+#include <stb_include.h>
+
 #include <fstream>
 #include <sstream>
 #include <iomanip>
 
 namespace utils {
-    std::string load_file_to_string(const char *file_path) {
-        if (std::ifstream ifs = std::ifstream(file_path, std::ios::in)) {
-            std::string contents;
-
-            ifs.seekg(0, std::ios::end);
-            contents.resize(ifs.tellg());
-            ifs.seekg(0, std::ios::beg);
-
-            ifs.read(&contents[0], contents.size());
-            return contents;
+    std::string load_shader_to_string(const char *file_path) {
+        // find last slash in filepath for directory
+        u32 lastSlash = 0;
+        const char *current = file_path;
+        for (u32 i = 0; *current; ++i, ++current) {
+            if (*current == '/') {
+                lastSlash = i;
+            }
         }
 
-        core->fatal("Failed to load file to string \"" + std::string(file_path) + "\"");
+        // get directory
+        std::string directory = std::string(file_path).substr(0, lastSlash);
+
+        char error[256];
+        const char *inject = "";
+        char *str = stb_include_file(const_cast<char *>(file_path), const_cast<char *>(inject),
+                                     const_cast<char *>(directory.c_str()), error);
+        if (!str) {
+            core->warn("Failed to load/preprocess shader: " + std::string(error));
+            return "";
+        }
+
+        return str;
     }
 
     std::string get_date_time_as_string() {
@@ -80,6 +96,16 @@ namespace utils {
                 break;
             case TextureFormatEnum::RGBA16F:
                 *texture_format = GL_RGBA16F;
+                *data_format = GL_RGBA;
+                *data_type = GL_FLOAT;
+                break;
+            case TextureFormatEnum::RGB32F:
+                *texture_format = GL_RGB32F;
+                *data_format = GL_RGB;
+                *data_type = GL_FLOAT;
+                break;
+            case TextureFormatEnum::RGBA32F:
+                *texture_format = GL_RGBA32F;
                 *data_format = GL_RGBA;
                 *data_type = GL_FLOAT;
                 break;

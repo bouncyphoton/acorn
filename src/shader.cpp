@@ -50,8 +50,8 @@ void Shader::init() {
         core->fatal("Failed to create shader program");
     }
 
-    std::string vertexSrc = utils::load_file_to_string(m_vertexPath.c_str());
-    std::string fragmentSrc = utils::load_file_to_string(m_fragmentPath.c_str());
+    std::string vertexSrc = utils::load_shader_to_string(m_vertexPath.c_str());
+    std::string fragmentSrc = utils::load_shader_to_string(m_fragmentPath.c_str());
 
     // Create and compile vertex and fragment shader
     vert = compileAndAttach(GL_VERTEX_SHADER, vertexSrc.c_str(), m_vertexPath.c_str());
