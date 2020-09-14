@@ -6,6 +6,29 @@ static void glfw_error_callback(int error, const char *desc) {
     fprintf(stderr, "[error][glfw][%d] %s\n", error, desc);
 }
 
+Platform::Platform() {
+    core->debug("Platform::Platform()");
+    init();
+}
+
+Platform::~Platform() {
+    core->debug("Platform::~Platform()");
+    destroy();
+}
+
+void Platform::update() {
+    glfwSwapBuffers(m_window);
+    glfwPollEvents();
+
+    if (glfwWindowShouldClose(m_window)) {
+        core->quit();
+    }
+}
+
+GLFWwindow *Platform::getGlfwWindow() {
+    return m_window;
+}
+
 void Platform::init() {
     if (!glfwInit()) {
         core->fatal("Failed to init GLFW");
@@ -36,17 +59,4 @@ void Platform::init() {
 void Platform::destroy() {
     glfwDestroyWindow(m_window);
     glfwTerminate();
-}
-
-void Platform::update() {
-    glfwSwapBuffers(m_window);
-    glfwPollEvents();
-
-    if (glfwWindowShouldClose(m_window)) {
-        core->quit();
-    }
-}
-
-GLFWwindow *Platform::getGlfwWindow() {
-    return m_window;
 }

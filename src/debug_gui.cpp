@@ -7,22 +7,14 @@
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 
-void DebugGui::init() {
-    const char *glslVersion = "#version 330 core";
-
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-
-    ImGui::StyleColorsDark();
-
-    ImGui_ImplGlfw_InitForOpenGL(core->platform.getGlfwWindow(), true);
-    ImGui_ImplOpenGL3_Init(glslVersion);
+DebugGui::DebugGui() {
+    core->debug("DebugGui::DebugGui()");
+    init();
 }
 
-void DebugGui::destroy() {
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+DebugGui::~DebugGui() {
+    core->debug("DebugGui::~DebugGui()");
+    destroy();
 }
 
 void DebugGui::draw() {
@@ -56,9 +48,8 @@ void DebugGui::draw() {
         ImGui::DragFloat3("look at", &core->gameState.camera.lookAt[0], 0.1f);
         ImGui::SliderFloat("exposure", &core->gameState.camera.exposure, 0.0f, 100.0f, "%.3f", 2);
 
-        if (ImGui::Button("refresh renderer")) {
-            core->renderer.destroy();
-            core->renderer.init();
+        if (ImGui::Button("reload shaders")) {
+            core->renderer.reloadShaders();
         }
     }
     ImGui::End();
@@ -70,4 +61,22 @@ void DebugGui::draw() {
     ImGui::Render();
     glViewport(0, 0, core->gameState.renderOptions.width, core->gameState.renderOptions.height);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+void DebugGui::init() {
+    const char *glslVersion = "#version 330 core";
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplGlfw_InitForOpenGL(core->platform.getGlfwWindow(), true);
+    ImGui_ImplOpenGL3_Init(glslVersion);
+}
+
+void DebugGui::destroy() {
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 }

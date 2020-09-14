@@ -6,15 +6,18 @@
 
 class Platform {
 public:
-    void init();
-
-    void destroy();
+    Platform();
+    ~Platform();
 
     void update();
 
     GLFWwindow *getGlfwWindow();
 
 private:
+    void init();
+
+    void destroy();
+
     GLFWwindow *m_window;
 };
 

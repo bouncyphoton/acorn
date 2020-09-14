@@ -7,11 +7,18 @@
 
 class Model {
 public:
+    explicit Model(const std::string &path);
+    explicit Model(std::vector<Mesh> &&meshes);
+    ~Model();
+
+    const std::vector<Mesh> &getMeshes() const {
+        return m_meshes;
+    }
+
+private:
     void init(const std::string &path);
 
-    void destroy();
-
-    std::vector<Mesh> meshes;
+    std::vector<Mesh> m_meshes;
 };
 
 #endif //ACORN_MODEL_H

@@ -5,13 +5,15 @@
 static Core core_local;
 Core *core = &core_local;
 
+Core::Core() {
+    debug("Core::Core()");
+}
+
+Core::~Core() {
+    debug("Core::~Core()");
+}
+
 void Core::run() {
-    info("Initializing...");
-
-    init();
-
-    info("Initialized successfully");
-
     Entity sphereEntity = {
             resourceManager.getModel("../assets/spheres/spheres.obj"),
             Transform{
@@ -71,7 +73,6 @@ void Core::run() {
 
 void Core::quit() {
     info("Quitting normally");
-    cleanup();
     exit(0);
 }
 
@@ -87,29 +88,11 @@ void Core::warn(const std::string &msg) {
     generic_log("[warn] " + msg);
 }
 
+void Core::debug(const std::string &msg) {
+    generic_log("[debug] " + msg);
+}
+
 void Core::fatal(const std::string &msg) {
     generic_log("[fatal] " + msg);
-    cleanup();
     exit(1);
-}
-
-void Core::init() {
-    gameState.renderOptions.width = 1024;
-    gameState.renderOptions.height = 768;
-    gameState.camera.position = glm::vec3(1, 0, 0);
-    gameState.camera.lookAt = glm::vec3(0, 0, -1);
-    gameState.camera.fovRadians = glm::quarter_pi<f32>();
-    gameState.scene.sunDirection = glm::normalize(glm::vec3(-1, 1, 1));
-
-    platform.init();
-    renderer.init();
-    resourceManager.init();
-    debugGui.init();
-}
-
-void Core::cleanup() {
-    debugGui.destroy();
-    resourceManager.destroy();
-    renderer.destroy();
-    platform.destroy();
 }
