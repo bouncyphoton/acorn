@@ -6,7 +6,7 @@
 #include <string>
 
 enum class TextureFormatEnum {
-    RGB8, RGBA8, RG16F, RGB16F, RGBA16F
+    RGB8, RGBA8, RG16F, RGB16F, RGBA16F, RGB32F, RGBA32F
 };
 
 class Texture {
