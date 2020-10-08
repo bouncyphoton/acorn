@@ -35,6 +35,8 @@ public:
 
     void setImage(int width, int height, TextureFormatEnum format, void *data = nullptr);
 
+    void generateMipmap() const;
+
     u32 getWidth() const {
         return m_width;
     }
@@ -56,6 +58,8 @@ public:
     void bind(u32 unit) override;
 
     void setImage(int side_length, TextureFormatEnum format, void *data[6] = nullptr);
+
+    void generateMipmap() const;
 
     u32 getSideLength() const {
         return m_sideLength;

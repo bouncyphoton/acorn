@@ -12,6 +12,10 @@ struct RenderStats {
     u32 drawCalls = 0;
 };
 
+struct GraphicsDebugLogger {
+    GraphicsDebugLogger();
+};
+
 class Renderer {
 public:
     Renderer();
@@ -30,32 +34,34 @@ private:
     /// Setup textures, framebuffers, etc.
     void init();
 
-    /// Run pre-compute render passes
-    void precompute();
-
     void drawNVertices(u32 n) const;
 
-    // textures
-    Texture2D m_defaultFboTexture;
-    Texture2D m_workingTexture;
-    TextureCubemap m_environmentMap;
-    TextureCubemap m_diffuseIrradianceCubemap;
-    TextureCubemap m_prefilteredEnvCubemap;
-    Texture2D m_brdfLut;
+    void precompute();
+    void updateIblProbe();
+    void renderFrame();
 
-    u32 m_numPrefilteredEnvMipmapLevels;
+    GraphicsDebugLogger m_debugLogger;
 
-    // framebuffers
-    Framebuffer m_defaultFbo;
-    Framebuffer m_workingFbo;
+    // common
+    Framebuffer m_targetFbo;
+    Texture2D m_targetTexture;
+    Texture2D m_hdrFrameTexture;
 
-    // shaders
-    Shader m_materialShader;
+    Shader m_tonemapShader;
+
+    // environment probe
     Shader m_skyShader;
     Shader m_diffuseIrradianceShader;
     Shader m_envMapPrefilterShader;
+    TextureCubemap m_environmentMap;
+    TextureCubemap m_diffuseIrradianceCubemap;
+    TextureCubemap m_prefilteredEnvCubemap;
+    u32 m_numPrefilteredEnvMipmapLevels;
+
+    // materials
+    Shader m_materialShader;
     Shader m_brdfLutShader;
-    Shader m_tonemapShader;
+    Texture2D m_brdfLut;
 
     // dummy vao
     u32 m_dummyVao = 0;

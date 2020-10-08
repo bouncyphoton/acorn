@@ -2,8 +2,8 @@
 #define ACORN_RESOURCE_MANAGER_H
 
 #include "types.h"
-#include "model.h"
-#include "texture.h"
+#include "graphics/model.h"
+#include "graphics/texture.h"
 #include <unordered_map>
 #include <string>
 

@@ -2,7 +2,7 @@
 #define ACORN_ENTITY_H
 
 #include "types.h"
-#include "model.h"
+#include "graphics/model.h"
 #include "transform.h"
 
 typedef u32 entityHandle_t;

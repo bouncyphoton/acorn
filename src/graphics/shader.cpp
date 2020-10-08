@@ -5,7 +5,7 @@
 #include <vector>
 
 Shader::Shader(const std::string &vertex_path, const std::string &fragment_path)
-        : m_vertexPath(vertex_path), m_fragmentPath(fragment_path) {
+    : m_vertexPath(vertex_path), m_fragmentPath(fragment_path) {
     core->debug("Shader::Shader(" + vertex_path + ", " + fragment_path + ")");
     init();
 }

@@ -16,8 +16,8 @@ Framebuffer::Framebuffer() {
 }
 
 Framebuffer::Framebuffer(Framebuffer &&other) noexcept
-        : m_id(other.m_id), m_depthRenderbuffer(other.m_depthRenderbuffer),
-          m_width(other.m_width), m_height(other.m_height) {
+    : m_id(other.m_id), m_depthRenderbuffer(other.m_depthRenderbuffer),
+      m_width(other.m_width), m_height(other.m_height) {
     other.m_id = 0;
 }
 
@@ -51,6 +51,8 @@ void Framebuffer::attachTexture(const Texture2D &texture) {
     glDrawBuffer(GL_COLOR_ATTACHMENT0);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture.getId(), 0);
 
+    // TODO: profile, there's probably a good amount of processing time spent here
+
     handleRenderbufferCreation();
 
     glBindFramebuffer(GL_FRAMEBUFFER, previouslyBound);
@@ -72,6 +74,10 @@ void Framebuffer::attachTexture(const TextureCubemap &texture, u32 target, u32 l
     handleRenderbufferCreation();
 
     glBindFramebuffer(GL_FRAMEBUFFER, previouslyBound);
+}
+
+void Framebuffer::setViewport() {
+    glViewport(0, 0, m_width, m_height);
 }
 
 void Framebuffer::bind() {

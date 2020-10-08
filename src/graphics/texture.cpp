@@ -12,7 +12,7 @@ Texture::Texture() {
 }
 
 Texture::Texture(Texture &&other) noexcept
-        : m_id(other.m_id) {
+    : m_id(other.m_id) {
     other.m_id = 0;
 }
 
@@ -53,6 +53,16 @@ void Texture2D::setImage(int width, int height, TextureFormatEnum format, void *
     glBindTexture(GL_TEXTURE_2D, previouslyBound);
 }
 
+void Texture2D::generateMipmap() const {
+    s32 previouslyBound;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &previouslyBound);
+
+    glBindTexture(GL_TEXTURE_2D, getId());
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    glBindTexture(GL_TEXTURE_2D, previouslyBound);
+}
+
 void TextureCubemap::bind(u32 unit) {
     glActiveTexture(GL_TEXTURE0 + unit);
     glBindTexture(GL_TEXTURE_CUBE_MAP, getId());
@@ -77,6 +87,16 @@ void TextureCubemap::setImage(int side_length, TextureFormatEnum format, void **
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+
+    glBindTexture(GL_TEXTURE_CUBE_MAP, previouslyBound);
+}
+
+void TextureCubemap::generateMipmap() const {
+    s32 previouslyBound;
+    glGetIntegerv(GL_TEXTURE_BINDING_CUBE_MAP, &previouslyBound);
+
+    glBindTexture(GL_TEXTURE_CUBE_MAP, getId());
     glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
     glBindTexture(GL_TEXTURE_CUBE_MAP, previouslyBound);
