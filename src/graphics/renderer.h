@@ -6,6 +6,7 @@
 #include "constants.h"
 #include "texture.h"
 #include "shader.h"
+#include "render_context.h"
 
 struct RenderStats {
     u32 verticesRendered = 0;
@@ -41,6 +42,8 @@ private:
     void renderFrame();
 
     GraphicsDebugLogger m_debugLogger;
+
+    RenderContext m_ctx;
 
     // common
     Framebuffer m_targetFbo;

@@ -136,24 +136,23 @@ void Renderer::drawNVertices(u32 n) const {
 }
 
 void Renderer::precompute() {
-    // Output to brdfLut texture
-    m_targetFbo.bind();
-    m_targetFbo.attachTexture(m_brdfLut);
+    // We want to render to the brdfLut texture
+    m_ctx.setRenderTarget(m_brdfLut);
 
-    // Setup for draw
-    glDisable(GL_DEPTH_TEST);
-    glClear(GL_COLOR_BUFFER_BIT);
-    m_targetFbo.setViewport();
+    // Set render state
+    m_ctx.setState(RenderStateBuilder()
+                   .setDepthTest(false)
+                   .build());
 
-    // Draw
+    // Clear screen
+    m_ctx.clear(RenderContext::CLEAR_COLOR | RenderContext::CLEAR_DEPTH);
+
+    // Bind shader and draw vertices
     m_brdfLutShader.bind();
     drawNVertices(4);
 
-    // Generate mipmap for brdflut? TODO, do we need to do this?
-    m_brdfLut.bind(0);
-    glGenerateMipmap(GL_TEXTURE_2D);
-
-    glEnable(GL_DEPTH_TEST);
+    // Generate mipmap
+    m_brdfLut.generateMipmap();
 }
 
 void Renderer::updateIblProbe() {
@@ -338,6 +337,26 @@ void Renderer::renderFrame() {
 
         glDepthMask(GL_TRUE);
         glDepthFunc(GL_LESS);
+
+        /*
+         * skyPass = PassBuilder()
+         *           .setShader(m_skyShader)
+         *           .setOutput(m_hdrTexture)
+         *           .setExecute([&](RenderContext &ctx) {
+         *               glDepthFunc(GL_LEQUAL);
+         *               glDepthMask(GL_FALSE);
+         *
+         *               ctx.bind("uViewProjectionMatrix", core->gameState.camera.getViewProjectionMatrix());
+         *               ctx.bind("uEnvMap", m_environmentMap);
+         *               ctx.drawNVertices(14);
+         *
+         *               glDepthMask(GL_TRUE);
+         *               glDepthFunc(GL_LESS);
+         *           })
+         *           .build();
+         *
+         * skyPass.execute();
+         */
     }
 
     // tonemap
@@ -354,5 +373,24 @@ void Renderer::renderFrame() {
         drawNVertices(4);
 
         glEnable(GL_DEPTH_TEST);
+
+        /*
+         * tonemapPass = PassBuilder()
+         *               .setShader(m_tonemapShader)
+         *               .setOutput(m_targetTexture)
+         *               .setExecute([&](RenderContext &ctx) {
+         *                   glDisable(GL_DEPTH_TEST);
+         *
+         *                   ctx.clear(COLOR | BUFFER);
+         *                   ctx.bind("uImage", m_hdrFrameTexture);
+         *                   ctx.bind("uExposure, core->gameState.camera.exposure);
+         *                   ctx.drawNVertices(4);
+         *
+         *                   glEnable(GL_DEPTH_TEST);
+         *               })
+         *               .build();
+         *
+         * tonemapPass.execute();
+         */
     }
 }
