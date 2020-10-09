@@ -2,16 +2,19 @@
 #define ACORN_MATERIAL_H
 
 #include "types.h"
+#include "texture.h"
 #include <glm/glm.hpp>
 
-struct Material {
-    u32 albedoTexture = 0;
-    u32 normalTexture = 0;
+// TODO: if we decide to stream textures or something, we will want a better handle for textures
 
-    u32 metallicTexture = 0;
+struct Material {
+    Texture *albedoTexture = nullptr;
+    Texture *normalTexture = nullptr;
+
+    Texture *metallicTexture = nullptr;
     f32 metallicScale = 1.0f;
 
-    u32 roughnessTexture = 0;
+    Texture *roughnessTexture = nullptr;
     f32 roughnessScale = 1.0f;
 };
 

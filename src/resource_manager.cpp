@@ -137,11 +137,11 @@ void ResourceManager::init() {
 
     // TODO: texture 'reference' for materials?
     Material material;
-    material.albedoTexture = m_textureWhite.getId();
-    material.normalTexture = m_textureNormal.getId();
-    material.metallicTexture = m_textureWhite.getId();
+    material.albedoTexture = &m_textureWhite;
+    material.normalTexture = &m_textureNormal;
+    material.metallicTexture = &m_textureWhite;
     material.metallicScale = 0;
-    material.roughnessTexture = m_textureWhite.getId();
+    material.roughnessTexture = &m_textureWhite;
     material.roughnessScale = 1;
 
     std::vector<Mesh> m;

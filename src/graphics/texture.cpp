@@ -27,7 +27,7 @@ Texture::~Texture() {
     glDeleteTextures(1, &m_id);
 }
 
-void Texture2D::bind(u32 unit) {
+void Texture2D::bind(u32 unit) const {
     glActiveTexture(GL_TEXTURE0 + unit);
     glBindTexture(GL_TEXTURE_2D, getId());
 }
@@ -63,7 +63,7 @@ void Texture2D::generateMipmap() const {
     glBindTexture(GL_TEXTURE_2D, previouslyBound);
 }
 
-void TextureCubemap::bind(u32 unit) {
+void TextureCubemap::bind(u32 unit) const {
     glActiveTexture(GL_TEXTURE0 + unit);
     glBindTexture(GL_TEXTURE_CUBE_MAP, getId());
 }

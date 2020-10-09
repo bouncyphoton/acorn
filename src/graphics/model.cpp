@@ -65,43 +65,34 @@ void Model::init(const std::string &path) {
     for (u32 i = 0; i < numMeshes; ++i) {
         // Diffuse texture
         if (!tinyObjMaterials[i].diffuse_texname.empty()) {
-            meshMaterials[i].albedoTexture = core->resourceManager.getTexture(
-                                                 dir + "/" + tinyObjMaterials[i].diffuse_texname)->getId();
+            meshMaterials[i].albedoTexture = core->resourceManager.getTexture(dir + "/" + tinyObjMaterials[i].diffuse_texname);
         } else {
-            meshMaterials[i].albedoTexture = core->resourceManager.getBuiltInTexture(
-                                                 BuiltInTextureEnum::MISSING)->getId();
+            meshMaterials[i].albedoTexture = core->resourceManager.getBuiltInTexture(BuiltInTextureEnum::MISSING);
         }
 
         // Normal texture
         if (!tinyObjMaterials[i].normal_texname.empty()) {
-            meshMaterials[i].normalTexture = core->resourceManager.getTexture(
-                                                 dir + "/" + tinyObjMaterials[i].normal_texname)->getId();
+            meshMaterials[i].normalTexture = core->resourceManager.getTexture(dir + "/" + tinyObjMaterials[i].normal_texname);
         } else if (!tinyObjMaterials[i].bump_texname.empty()) {
-            meshMaterials[i].normalTexture = core->resourceManager.getTexture(
-                                                 dir + "/" + tinyObjMaterials[i].bump_texname)->getId();
+            meshMaterials[i].normalTexture = core->resourceManager.getTexture(dir + "/" + tinyObjMaterials[i].bump_texname);
         }
         {
-            meshMaterials[i].normalTexture = core->resourceManager.getBuiltInTexture(
-                                                 BuiltInTextureEnum::NORMAL)->getId();
+            meshMaterials[i].normalTexture = core->resourceManager.getBuiltInTexture(BuiltInTextureEnum::NORMAL);
         }
 
         // Metallic texture
         if (!tinyObjMaterials[i].metallic_texname.empty()) {
-            meshMaterials[i].metallicTexture = core->resourceManager.getTexture(
-                                                   dir + "/" + tinyObjMaterials[i].metallic_texname)->getId();
+            meshMaterials[i].metallicTexture = core->resourceManager.getTexture(dir + "/" + tinyObjMaterials[i].metallic_texname);
         } else {
-            meshMaterials[i].metallicTexture = core->resourceManager.getBuiltInTexture(
-                                                   BuiltInTextureEnum::WHITE)->getId();
+            meshMaterials[i].metallicTexture = core->resourceManager.getBuiltInTexture(BuiltInTextureEnum::WHITE);
         }
         meshMaterials[i].metallicScale = tinyObjMaterials[i].metallic;
 
         // Roughness texture
         if (!tinyObjMaterials[i].roughness_texname.empty()) {
-            meshMaterials[i].roughnessTexture = core->resourceManager.getTexture(
-                                                    dir + "/" + tinyObjMaterials[i].roughness_texname)->getId();
+            meshMaterials[i].roughnessTexture = core->resourceManager.getTexture(dir + "/" + tinyObjMaterials[i].roughness_texname);
         } else {
-            meshMaterials[i].roughnessTexture = core->resourceManager.getBuiltInTexture(
-                                                    BuiltInTextureEnum::WHITE)->getId();
+            meshMaterials[i].roughnessTexture = core->resourceManager.getBuiltInTexture(BuiltInTextureEnum::WHITE);
         }
         meshMaterials[i].roughnessScale = tinyObjMaterials[i].roughness;
     }

@@ -58,7 +58,7 @@ private:
     TextureCubemap m_environmentMap;
     TextureCubemap m_diffuseIrradianceCubemap;
     TextureCubemap m_prefilteredEnvCubemap;
-    u32 m_numPrefilteredEnvMipmapLevels;
+    s32 m_numPrefilteredEnvMipmapLevels;
 
     // materials
     Shader m_materialShader;
