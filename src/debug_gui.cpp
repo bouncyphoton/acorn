@@ -45,18 +45,19 @@ void DebugGui::draw() {
 
         f32 fov = core->gameState.camera.getFov();
         glm::vec3 pos = core->gameState.camera.getPosition();
-        glm::vec3 lookPos = core->gameState.camera.getLookPosition();
+        glm::vec2 rot = core->gameState.camera.getLookRotation();
         f32 exposure = core->gameState.camera.getExposure();
 
         ImGui::Text("Camera");
+        ImGui::Text("mouse grabbed: %s (toggle with TAB)", core->platform.isMouseGrabbed() ? "true" : "false");
         ImGui::SliderFloat("fov", &fov, 0.0f, glm::pi<f32>());
         ImGui::DragFloat3("position", &pos[0], 0.1f);
-        ImGui::DragFloat3("look at", &lookPos[0], 0.1f);
+        ImGui::DragFloat2("rotation", &rot[0], 0.1f);
         ImGui::SliderFloat("exposure", &exposure, 0.0f, 100.0f, "%.3f", 2);
 
         core->gameState.camera.setFov(fov);
         core->gameState.camera.setPosition(pos);
-        core->gameState.camera.setLookPosition(lookPos);
+        core->gameState.camera.setLookRotation(rot);
         core->gameState.camera.setExposure(exposure);
 
         if (ImGui::Button("reload shaders")) {

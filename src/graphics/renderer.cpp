@@ -277,7 +277,6 @@ void Renderer::renderFrame() {
                        .build());
 
         Camera skyboxCamera = core->gameState.camera;
-        skyboxCamera.setLookPosition(skyboxCamera.getLookPosition() - skyboxCamera.getPosition());
         skyboxCamera.setPosition(glm::vec3(0));
 
         m_skyShader.bind();

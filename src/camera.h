@@ -13,6 +13,10 @@ public:
 
     glm::mat4 getViewProjectionMatrix() const;
 
+    glm::vec3 getForward() const;
+
+    glm::vec3 getRight() const;
+
     glm::vec3 getPosition() const {
         return m_position;
     }
@@ -21,12 +25,24 @@ public:
         m_position = position;
     }
 
-    glm::vec3 getLookPosition() const {
-        return m_lookPosition;
+    void addPosition(glm::vec3 position) {
+        setPosition(getPosition() + position);
     }
 
-    void setLookPosition(glm::vec3 look_position) {
-        m_lookPosition = look_position;
+    glm::vec2 getLookRotation() const {
+        return m_rotation;
+    }
+
+    void setLookRotation(glm::vec2 rotation) {
+        f32 epsilon = 0.01f;
+        rotation.y = glm::clamp(rotation.y, -glm::half_pi<f32>() + epsilon, glm::half_pi<f32>() - epsilon);
+        rotation.x = glm::mod(rotation.x, glm::two_pi<f32>());
+
+        m_rotation = rotation;
+    }
+
+    void addLookRotation(glm::vec2 rotation) {
+        setLookRotation(getLookRotation() + rotation);
     }
 
     f32 getFov() const {
@@ -61,9 +77,11 @@ public:
         m_farPlane = far_plane;
     }
 
+    constexpr static glm::vec3 UP = glm::vec3(0, 1, 0);
+
 private:
     glm::vec3 m_position = glm::vec3(0);
-    glm::vec3 m_lookPosition = glm::vec3(0, 0, -1);
+    glm::vec2 m_rotation = glm::vec2(0);
     f32 m_fov = glm::half_pi<f32>();
     f32 m_exposure = 1.0f;
     f32 m_nearPlane = 0.01f;
