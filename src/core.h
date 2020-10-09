@@ -20,8 +20,8 @@ public:
     /// Quit and cleanup
     [[noreturn]] void quit();
 
-    Config config;
     GameState gameState;
+    Config config;
     Platform platform;
     Renderer renderer;
     ResourceManager resourceManager;
