@@ -1,17 +1,17 @@
 #include "shader.h"
-#include "core.h"
 #include "utils.h"
+#include "log.h"
 #include <GL/gl3w.h>
 #include <vector>
 
 Shader::Shader(const std::string &vertex_path, const std::string &fragment_path)
     : m_vertexPath(vertex_path), m_fragmentPath(fragment_path) {
-    core->debug("Shader::Shader(" + vertex_path + ", " + fragment_path + ")");
+    Log::debug("Shader::Shader(%s, %s)", vertex_path.c_str(), fragment_path.c_str());
     init();
 }
 
 Shader::~Shader() {
-    core->debug("Shader::~Shader()");
+    Log::debug("Shader::~Shader()");
     destroy();
 }
 
@@ -47,7 +47,7 @@ void Shader::init() {
     u32 vert = 0, frag = 0;
     m_programId = glCreateProgram();
     if (m_programId == 0) {
-        core->fatal("Failed to create shader program");
+        Log::fatal("Failed to create shader program");
     }
 
     std::string vertexSrc = utils::load_shader_to_string(m_vertexPath.c_str());
@@ -74,7 +74,7 @@ void Shader::init() {
         std::vector<char> log(length);
         glGetProgramInfoLog(m_programId, length, &length, log.data());
 
-        core->warn("Failed to link program:\n" + std::string(log.data()));
+        Log::warn("Failed to link program:\n%s", log.data());
     }
 
     glUseProgram(previouslyBound);
@@ -89,7 +89,7 @@ void Shader::destroy() {
 u32 Shader::compileAndAttach(u32 shader_type, const char *shader_src, const char *debug_shader_path) {
     u32 shader = glCreateShader(shader_type);
     if (shader == 0) {
-        core->fatal("Failed to create shader \"" + std::string(debug_shader_path) + "\"");
+        Log::fatal("Failed to create shader '%s'", debug_shader_path);
     }
     glShaderSource(shader, 1, &shader_src, nullptr);
     glCompileShader(shader);
@@ -104,7 +104,7 @@ u32 Shader::compileAndAttach(u32 shader_type, const char *shader_src, const char
         std::vector<char> log(length);
         glGetShaderInfoLog(shader, length, &length, log.data());
 
-        core->warn("Failed to compile shader \"" + std::string(debug_shader_path) + "\":\n" + std::string(log.data()));
+        Log::warn("Failed to compile shader '%s':\n%s", debug_shader_path, log.data());
     }
 
     // Attach if successfully compiled

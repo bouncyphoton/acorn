@@ -1,5 +1,5 @@
 #include "platform.h"
-#include "core.h"
+#include "log.h"
 #include "constants.h"
 
 static void glfw_error_callback(int error, const char *desc) {
@@ -7,12 +7,12 @@ static void glfw_error_callback(int error, const char *desc) {
 }
 
 Platform::Platform() {
-    core->debug("Platform::Platform()");
+    Log::debug("Platform::Platform()");
     init();
 }
 
 Platform::~Platform() {
-    core->debug("Platform::~Platform()");
+    Log::debug("Platform::~Platform()");
     destroy();
 }
 
@@ -31,7 +31,7 @@ GLFWwindow *Platform::getGlfwWindow() {
 
 void Platform::init() {
     if (!glfwInit()) {
-        core->fatal("Failed to init GLFW");
+        Log::fatal("Failed to init GLFW");
     }
 
     glfwSetErrorCallback(glfw_error_callback);
@@ -44,13 +44,13 @@ void Platform::init() {
                                 consts::APP_NAME, nullptr, nullptr);
 
     if (!m_window) {
-        core->fatal("Failed to create GLFW window");
+        Log::fatal("Failed to create GLFW window");
     }
 
     glfwMakeContextCurrent(m_window);
 
     if (gl3wInit()) {
-        core->fatal("Failed to init gl3w");
+        Log::fatal("Failed to init gl3w");
     }
 
     glfwSwapInterval(core->gameState.renderOptions.vsyncNumSwapFrames);

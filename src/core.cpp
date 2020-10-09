@@ -1,16 +1,16 @@
 #include "core.h"
-#include "utils.h"
+#include "log.h"
 #include <iostream>
 
 static Core core_local;
 Core *core = &core_local;
 
 Core::Core() {
-    debug("Core::Core()");
+    Log::debug("Core::Core()");
 }
 
 Core::~Core() {
-    debug("Core::~Core()");
+    Log::debug("Core::~Core()");
 }
 
 void Core::run() {
@@ -76,27 +76,7 @@ void Core::run() {
 }
 
 void Core::quit() {
-    info("Quitting normally");
+    Log::info("Quitting normally");
     exit(0);
 }
 
-static void generic_log(const std::string &msg) {
-    std::cout << "[" << utils::get_date_time_as_string() << "]" << msg << std::endl;
-}
-
-void Core::info(const std::string &msg) {
-    generic_log("[info] " + msg);
-}
-
-void Core::warn(const std::string &msg) {
-    generic_log("[warn] " + msg);
-}
-
-void Core::debug(const std::string &msg) {
-    generic_log("[debug] " + msg);
-}
-
-void Core::fatal(const std::string &msg) {
-    generic_log("[fatal] " + msg);
-    exit(1);
-}

@@ -1,6 +1,6 @@
 #include "resource_manager.h"
-#include "core.h"
 #include "utils.h"
+#include "log.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_FAILURE_USERMSG
@@ -8,12 +8,12 @@
 #include <stb_image.h>
 
 ResourceManager::ResourceManager() {
-    core->debug("ResourceManager::ResourceManager()");
+    Log::debug("ResourceManager::ResourceManager()");
     init();
 }
 
 ResourceManager::~ResourceManager() {
-    core->debug("ResourceManager::~ResourceManager()");
+    Log::debug("ResourceManager::~ResourceManager()");
     destroy();
 }
 
@@ -38,12 +38,12 @@ Texture *ResourceManager::getTexture(const std::string &path) {
     }
 
     // Try to load texture
-    core->info("Loading texture '" + path + "'");
+    Log::info("Loading texture '%s'", path.c_str());
 
     s32 width, height, channels;
     u8 *data = stbi_load(path.c_str(), &width, &height, &channels, 4);
     if (!data) {
-        core->fatal("Failed to load image '" + path + "'\n " + stbi_failure_reason());
+        Log::fatal("Failed to load image '%s'\n%s", path.c_str(), stbi_failure_reason());
     }
 
     Texture2D *texture = new Texture2D();
@@ -64,8 +64,7 @@ Texture *ResourceManager::getBuiltInTexture(BuiltInTextureEnum tex) {
         case BuiltInTextureEnum::NORMAL:
             return &m_textureNormal;
         default:
-            core->warn("Unhandled case for getting a built in texture: " +
-                       std::to_string(static_cast<int>(tex)));
+            Log::warn("Unhandled case for getting a built in texture: %d", (u32)tex);
         case BuiltInTextureEnum::MISSING:
             return &m_textureMissing;
     }
@@ -76,8 +75,7 @@ Model *ResourceManager::getBuiltInModel(BuiltInModelEnum model) {
         case BuiltInModelEnum::PLANE:
             return m_modelPlane;
         default:
-            core->warn("Unhandled case for getting a built in mode: "
-                       + std::to_string(static_cast<int>(model)));
+            Log::warn("Unhandled case for getting a built in model: %d", (u32)model);
             return nullptr;
     }
 }

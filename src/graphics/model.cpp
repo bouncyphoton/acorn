@@ -1,6 +1,6 @@
 #include "model.h"
 #include "texture.h"
-#include "core.h"
+#include "log.h"
 #include "utils.h"
 
 // TODO: move away from OBJs to binary blobs for meshes
@@ -12,23 +12,23 @@
 #undef max
 
 Model::Model(const std::string &path) {
-    core->debug("Model::Model(" + path + ")");
+    Log::debug("Model::Model(%s)", path.c_str());
     init(path);
 }
 
 Model::Model(std::vector<Mesh> &&meshes)
     : m_meshes(std::move(meshes)) {
-    core->debug("Model::Model(" + std::to_string(m_meshes.size()) + " meshes)");
+    Log::debug("Model::Model(%d meshes)", meshes.size());
 }
 
 Model::~Model() {
-    core->debug("Model::~Model()");
+    Log::debug("Model::~Model()");
 }
 
 void Model::init(const std::string &path) {
     size_t slashIdx = path.rfind('/');
     if (slashIdx == std::string::npos) {
-        core->fatal("Failed to find directory for model path: '" + path + "'");
+        Log::fatal("Failed to find directory for model path: '%s'", path.c_str());
     }
 
     std::string dir = path.substr(0, slashIdx);
@@ -40,13 +40,13 @@ void Model::init(const std::string &path) {
 
     bool result = tinyobj::LoadObj(&attrib, &shapes, &tinyObjMaterials, &warn, &err, path.c_str(), dir.c_str(), true);
     if (!warn.empty()) {
-        core->warn(warn);
+        Log::warn(warn.c_str());
     }
     if (!err.empty()) {
-        core->fatal(err);
+        Log::fatal(err.c_str());
     }
     if (!result) {
-        core->fatal("Failed to load OBJ '" + std::string(path) + "'");
+        Log::fatal("Failed to load OBJ '%s'", path.c_str());
     }
 
     bool hasNormals = !attrib.normals.empty();

@@ -2,6 +2,7 @@
 #include "types.h"
 #include "utils.h"
 #include "core.h"
+#include "log.h"
 #include "constants.h"
 #include <stb_image.h>
 #include <GL/gl3w.h>
@@ -26,9 +27,9 @@
 static void APIENTRY opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
                                            const GLchar *message, const void *user_param) {
     if (severity == GL_DEBUG_SEVERITY_HIGH) {
-        core->warn("[error][opengl] " + std::string(message));
+        Log::warn("[error][opengl] %s", message);
     } else if (severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
-        core->info("[opengl] " + std::string(message));
+        Log::info("[opengl] %s", message);
     }
 }
 
@@ -48,12 +49,12 @@ Renderer::Renderer()
       m_envMapPrefilterShader("../assets/shaders/cube.vert", "../assets/shaders/env_map_prefilter.frag"),
       m_brdfLutShader("../assets/shaders/fullscreen.vert", "../assets/shaders/brdf_lut.frag"),
       m_tonemapShader("../assets/shaders/fullscreen.vert", "../assets/shaders/tonemap.frag") {
-    core->debug("Renderer::Renderer()");
+    Log::debug("Renderer::Renderer()");
     init();
 }
 
 Renderer::~Renderer() {
-    core->debug("Renderer::~Renderer()");
+    Log::debug("Renderer::~Renderer()");
 }
 
 void Renderer::init() {
@@ -73,7 +74,7 @@ void Renderer::init() {
         stbi_loadf("../assets/env/nz.hdr", &w, &h, nullptr, 3)
     };
     if (w != h) {
-        core->fatal("skybox side textures are not square");
+        Log::fatal("skybox side textures are not square");
     }
     m_environmentMap.setImage(w, TextureFormatEnum::RGB16F, data);
     for (int i = 0; i < 6; ++i) {
@@ -95,7 +96,7 @@ void Renderer::init() {
 
     glGenVertexArrays(1, &m_dummyVao);
     if (m_dummyVao == 0) {
-        core->fatal("Failed to generate dummy VAO");
+        Log::fatal("Failed to generate dummy VAO");
     }
 
     precompute();
@@ -116,7 +117,6 @@ void Renderer::render() {
 }
 
 void Renderer::reloadShaders() {
-    // TODO: reimplement
     m_materialShader.reload();
     m_skyShader.reload();
     m_diffuseIrradianceShader.reload();

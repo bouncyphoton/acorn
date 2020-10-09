@@ -1,5 +1,5 @@
 #include "mesh.h"
-#include "core.h"
+#include "log.h"
 #include <GL/gl3w.h>
 
 Mesh::Mesh(const std::vector<Vertex> &vertices, Material material)
@@ -11,20 +11,20 @@ Mesh::Mesh(const std::vector<Vertex> &vertices, Material material)
     }
 
     if (vertices.empty()) {
-        core->warn("Initializing a mesh with 0 vertices");
+        Log::warn("Initializing a mesh with 0 vertices");
     }
 
     // create vao and vbo for rendering
     glGenVertexArrays(1, &m_vao);
     if (m_vao == 0) {
-        core->fatal("Failed to generate vao for mesh");
+        Log::fatal("Failed to generate vao for mesh");
     }
 
     glBindVertexArray(m_vao);
 
     glGenBuffers(1, &m_vbo);
     if (m_vbo == 0) {
-        core->fatal("Failed to generate vbo for mesh");
+        Log::fatal("Failed to generate vbo for mesh");
     }
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
@@ -46,7 +46,7 @@ Mesh::Mesh(const std::vector<Vertex> &vertices, Material material)
 
     glBindVertexArray(0);
 
-    core->debug("Mesh::Mesh(" + std::to_string(vertices.size()) + " vertices, mat) - #" + std::to_string(m_vao));
+    Log::debug("Mesh::Mesh(%d vertices, mat) - #%d", vertices.size(), m_vao);
 }
 
 Mesh::Mesh(Mesh &&other) noexcept
@@ -73,7 +73,7 @@ Mesh &Mesh::operator=(Mesh &&other) noexcept {
 }
 
 Mesh::~Mesh() {
-    core->debug("Mesh::~Mesh() - " + std::to_string(m_vao));
+    Log::debug("Mesh::~Mesh() - %d", m_vao);
     glDeleteVertexArrays(1, &m_vao);
     glDeleteBuffers(1, &m_vbo);
 }
