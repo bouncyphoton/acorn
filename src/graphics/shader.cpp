@@ -100,6 +100,7 @@ void Shader::destroy() {
     glDeleteProgram(m_programId);
     m_programId = 0;
     m_uniformLocations.clear();
+    m_textureUnits.clear();
 }
 
 u32 Shader::compileAndAttach(u32 shader_type, const char *shader_src, const char *debug_shader_path) {
