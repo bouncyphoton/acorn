@@ -2,7 +2,7 @@
 #define ACORN_FRAMEBUFFER_H
 
 #include "types.h"
-#include "texture.h"
+#include "graphics/texture.h"
 #include <GL/gl3w.h>
 
 // TODO: renderbuffer
@@ -22,11 +22,13 @@ public:
     /// \param level Mipmap level
     void attachTexture(const TextureCubemap &texture, u32 target, u32 level = 0);
 
+    void setViewport(u32 mip_level = 0);
+
     void bind();
 
     void blit(Framebuffer &fbo, u32 mask, u32 filter);
 
-    void blitToDefaultFramebuffer(u32 mask, u32 filter);
+    void blitToDefaultFramebuffer(u32 mask, u32 filter) const;
 
 private:
     void handleRenderbufferCreation();

@@ -1,6 +1,6 @@
 #include "debug_gui.h"
 #include "core.h"
-#include "renderer.h"
+#include "graphics/renderer.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"

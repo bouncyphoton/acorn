@@ -4,7 +4,7 @@
 #include "config.h"
 #include "game_state.h"
 #include "platform.h"
-#include "renderer.h"
+#include "graphics/renderer.h"
 #include "resource_manager.h"
 #include "debug_gui.h"
 #include <string>

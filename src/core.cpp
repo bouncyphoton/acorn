@@ -14,37 +14,41 @@ Core::~Core() {
 }
 
 void Core::run() {
+    // TODO: make this less weird to work with
     Entity sphereEntity = {
-            resourceManager.getModel("../assets/spheres/spheres.obj"),
-            Transform{
-                    glm::vec3(0, 1.15, 0),
-                    glm::identity<glm::quat>(),
-                    glm::vec3(1.0f)
-            }};
+        resourceManager.getModel("../assets/spheres/spheres.obj"),
+        Transform{
+            glm::vec3(0, 1.15, 0),
+            glm::identity<glm::quat>(),
+            glm::vec3(1.0f)
+        }
+    };
 
     Entity rifleEntity = {
-            resourceManager.getModel("../assets/stylized-rifle/Stylized_rifle_final.obj"),
-            Transform{
-                    glm::vec3(0, 0.55, -0.35),
-                    glm::vec3(0, glm::half_pi<f32>(), 0),
-                    glm::vec3(0.01f)
-            }};
+        resourceManager.getModel("../assets/stylized-rifle/Stylized_rifle_final.obj"),
+        Transform{
+            glm::vec3(0, 0.55, -0.35),
+            glm::vec3(0, glm::half_pi<f32>(), 0),
+            glm::vec3(0.01f)
+        }
+    };
 
     Entity rockEntity = {
-            resourceManager.getModel("../assets/rock03/3DRock003_16K.obj"),
-            Transform{
-                    glm::vec3(0, 0.55, 0.35),
-                    glm::vec3(0, glm::half_pi<f32>(), 0),
-                    glm::vec3(1.0f)
-            }};
+        resourceManager.getModel("../assets/rock03/3DRock003_16K.obj"),
+        Transform{
+            glm::vec3(0, 0.55, 0.35),
+            glm::vec3(0, glm::half_pi<f32>(), 0),
+            glm::vec3(1.0f)
+        }
+    };
 
     Entity planeEntity = {
-            resourceManager.getBuiltInModel(BuiltInModelEnum::PLANE),
-            Transform{
-                    glm::vec3(0),
-                    glm::identity<glm::quat>(),
-                    glm::vec3(10)
-            }
+        resourceManager.getBuiltInModel(BuiltInModelEnum::PLANE),
+        Transform{
+            glm::vec3(0),
+            glm::identity<glm::quat>(),
+            glm::vec3(10)
+        }
     };
 
     entityHandle_t sphereHandle = gameState.scene.addEntity(sphereEntity);

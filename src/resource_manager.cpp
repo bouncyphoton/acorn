@@ -98,34 +98,35 @@ void ResourceManager::init() {
     u8 missing[4 * 4] = {255, 0, 255, 255,
                          0, 0, 0, 255,
                          255, 0, 255, 255,
-                         0, 0, 0, 255};
+                         0, 0, 0, 255
+                        };
     m_textureMissing.setImage(1, 1, TextureFormatEnum::RGBA8, missing);
 
     // Load built-in models
     glm::vec3 norm = glm::vec3(0, 1, 0);
     Vertex v1 = {
-            glm::vec3(-1, 0, -1), // position
-            norm, // normal
-            glm::vec2(0, 0), // uv
-            glm::vec3(0), glm::vec3(0) // tangent and bi-tangent will be calculated later
+        glm::vec3(-1, 0, -1), // position
+        norm, // normal
+        glm::vec2(0, 0), // uv
+        glm::vec3(0), glm::vec3(0) // tangent and bi-tangent will be calculated later
     };
     Vertex v2 = {
-            glm::vec3(1, 0, -1), // position
-            norm, // normal
-            glm::vec2(1, 0), // uv
-            glm::vec3(0), glm::vec3(0) // tangent and bi-tangent will be calculated later
+        glm::vec3(1, 0, -1), // position
+        norm, // normal
+        glm::vec2(1, 0), // uv
+        glm::vec3(0), glm::vec3(0) // tangent and bi-tangent will be calculated later
     };
     Vertex v3 = {
-            glm::vec3(1, 0, 1), // position
-            norm, // normal
-            glm::vec2(1, 1), // uv
-            glm::vec3(0), glm::vec3(0) // tangent and bi-tangent will be calculated later
+        glm::vec3(1, 0, 1), // position
+        norm, // normal
+        glm::vec2(1, 1), // uv
+        glm::vec3(0), glm::vec3(0) // tangent and bi-tangent will be calculated later
     };
     Vertex v4 = {
-            glm::vec3(-1, 0, 1), // position
-            norm, // normal
-            glm::vec2(0, 1), // uv
-            glm::vec3(0), glm::vec3(0) // tangent and bi-tangent will be calculated later
+        glm::vec3(-1, 0, 1), // position
+        norm, // normal
+        glm::vec2(0, 1), // uv
+        glm::vec3(0), glm::vec3(0) // tangent and bi-tangent will be calculated later
     };
 
     std::vector<Vertex> vertices = {v1, v2, v3, v1, v3, v4};

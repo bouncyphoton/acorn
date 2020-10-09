@@ -3,7 +3,7 @@
 #include <GL/gl3w.h>
 
 Mesh::Mesh(const std::vector<Vertex> &vertices, Material material)
-        : m_numVertices(vertices.size()), m_material(material) {
+    : m_numVertices(vertices.size()), m_material(material) {
     // Find min and max
     for (auto &v : vertices) {
         m_min = glm::min(m_min, v.position);
@@ -50,12 +50,12 @@ Mesh::Mesh(const std::vector<Vertex> &vertices, Material material)
 }
 
 Mesh::Mesh(Mesh &&other) noexcept
-        : m_vao(other.m_vao),
-          m_vbo(other.m_vbo),
-          m_numVertices(other.m_numVertices),
-          m_material(other.m_material),
-          m_min(other.m_min),
-          m_max(other.m_max) {
+    : m_vao(other.m_vao),
+      m_vbo(other.m_vbo),
+      m_numVertices(other.m_numVertices),
+      m_material(other.m_material),
+      m_min(other.m_min),
+      m_max(other.m_max) {
     other.m_vao = 0;
     other.m_vbo = 0;
 }

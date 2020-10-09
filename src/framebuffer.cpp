@@ -1,5 +1,6 @@
 #include "framebuffer.h"
 #include "core.h"
+#include <cmath>
 
 Framebuffer::Framebuffer() {
     s32 previouslyBound;
@@ -16,8 +17,8 @@ Framebuffer::Framebuffer() {
 }
 
 Framebuffer::Framebuffer(Framebuffer &&other) noexcept
-        : m_id(other.m_id), m_depthRenderbuffer(other.m_depthRenderbuffer),
-          m_width(other.m_width), m_height(other.m_height) {
+    : m_id(other.m_id), m_depthRenderbuffer(other.m_depthRenderbuffer),
+      m_width(other.m_width), m_height(other.m_height) {
     other.m_id = 0;
 }
 
@@ -51,6 +52,8 @@ void Framebuffer::attachTexture(const Texture2D &texture) {
     glDrawBuffer(GL_COLOR_ATTACHMENT0);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture.getId(), 0);
 
+    // TODO: profile, there's probably a good amount of processing time spent here
+
     handleRenderbufferCreation();
 
     glBindFramebuffer(GL_FRAMEBUFFER, previouslyBound);
@@ -74,6 +77,11 @@ void Framebuffer::attachTexture(const TextureCubemap &texture, u32 target, u32 l
     glBindFramebuffer(GL_FRAMEBUFFER, previouslyBound);
 }
 
+void Framebuffer::setViewport(u32 mip_level) {
+    f32 scale = mip_level == 0 ? 1 : std::pow(0.5f, mip_level);
+    glViewport(0, 0, (u32)(m_width * scale), (u32)(m_height * scale));
+}
+
 void Framebuffer::bind() {
     glBindFramebuffer(GL_FRAMEBUFFER, m_id);
 }
@@ -89,7 +97,7 @@ void Framebuffer::blit(Framebuffer &fbo, u32 mask, u32 filter) {
     glBindFramebuffer(GL_FRAMEBUFFER, previouslyBound);
 }
 
-void Framebuffer::blitToDefaultFramebuffer(u32 mask, u32 filter) {
+void Framebuffer::blitToDefaultFramebuffer(u32 mask, u32 filter) const {
     s32 previouslyBound;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &previouslyBound);
 

@@ -17,7 +17,7 @@ Model::Model(const std::string &path) {
 }
 
 Model::Model(std::vector<Mesh> &&meshes)
-        : m_meshes(std::move(meshes)) {
+    : m_meshes(std::move(meshes)) {
     core->debug("Model::Model(" + std::to_string(m_meshes.size()) + " meshes)");
 }
 
@@ -66,42 +66,42 @@ void Model::init(const std::string &path) {
         // Diffuse texture
         if (!tinyObjMaterials[i].diffuse_texname.empty()) {
             meshMaterials[i].albedoTexture = core->resourceManager.getTexture(
-                    dir + "/" + tinyObjMaterials[i].diffuse_texname)->getId();
+                                                 dir + "/" + tinyObjMaterials[i].diffuse_texname)->getId();
         } else {
             meshMaterials[i].albedoTexture = core->resourceManager.getBuiltInTexture(
-                    BuiltInTextureEnum::MISSING)->getId();
+                                                 BuiltInTextureEnum::MISSING)->getId();
         }
 
         // Normal texture
         if (!tinyObjMaterials[i].normal_texname.empty()) {
             meshMaterials[i].normalTexture = core->resourceManager.getTexture(
-                    dir + "/" + tinyObjMaterials[i].normal_texname)->getId();
+                                                 dir + "/" + tinyObjMaterials[i].normal_texname)->getId();
         } else if (!tinyObjMaterials[i].bump_texname.empty()) {
             meshMaterials[i].normalTexture = core->resourceManager.getTexture(
-                    dir + "/" + tinyObjMaterials[i].bump_texname)->getId();
+                                                 dir + "/" + tinyObjMaterials[i].bump_texname)->getId();
         }
         {
             meshMaterials[i].normalTexture = core->resourceManager.getBuiltInTexture(
-                    BuiltInTextureEnum::NORMAL)->getId();
+                                                 BuiltInTextureEnum::NORMAL)->getId();
         }
 
         // Metallic texture
         if (!tinyObjMaterials[i].metallic_texname.empty()) {
             meshMaterials[i].metallicTexture = core->resourceManager.getTexture(
-                    dir + "/" + tinyObjMaterials[i].metallic_texname)->getId();
+                                                   dir + "/" + tinyObjMaterials[i].metallic_texname)->getId();
         } else {
             meshMaterials[i].metallicTexture = core->resourceManager.getBuiltInTexture(
-                    BuiltInTextureEnum::WHITE)->getId();
+                                                   BuiltInTextureEnum::WHITE)->getId();
         }
         meshMaterials[i].metallicScale = tinyObjMaterials[i].metallic;
 
         // Roughness texture
         if (!tinyObjMaterials[i].roughness_texname.empty()) {
             meshMaterials[i].roughnessTexture = core->resourceManager.getTexture(
-                    dir + "/" + tinyObjMaterials[i].roughness_texname)->getId();
+                                                    dir + "/" + tinyObjMaterials[i].roughness_texname)->getId();
         } else {
             meshMaterials[i].roughnessTexture = core->resourceManager.getBuiltInTexture(
-                    BuiltInTextureEnum::WHITE)->getId();
+                                                    BuiltInTextureEnum::WHITE)->getId();
         }
         meshMaterials[i].roughnessScale = tinyObjMaterials[i].roughness;
     }
@@ -127,24 +127,24 @@ void Model::init(const std::string &path) {
 
                 // set position
                 vertices.back().position = glm::vec3(
-                        attrib.vertices[3 * idx.vertex_index + 0],
-                        attrib.vertices[3 * idx.vertex_index + 1],
-                        attrib.vertices[3 * idx.vertex_index + 2]
-                );
+                                               attrib.vertices[3 * idx.vertex_index + 0],
+                                               attrib.vertices[3 * idx.vertex_index + 1],
+                                               attrib.vertices[3 * idx.vertex_index + 2]
+                                           );
 
                 // set normal
                 if (hasNormals) {
                     vertices.back().normal = glm::vec3(
-                            attrib.normals[3 * idx.normal_index + 0],
-                            attrib.normals[3 * idx.normal_index + 1],
-                            attrib.normals[3 * idx.normal_index + 2]
-                    );
+                                                 attrib.normals[3 * idx.normal_index + 0],
+                                                 attrib.normals[3 * idx.normal_index + 1],
+                                                 attrib.normals[3 * idx.normal_index + 2]
+                                             );
                 }
 
                 vertices.back().uv = glm::vec2(
-                        attrib.texcoords[2 * idx.texcoord_index + 0],
-                        attrib.texcoords[2 * idx.texcoord_index + 1]
-                );
+                                         attrib.texcoords[2 * idx.texcoord_index + 0],
+                                         attrib.texcoords[2 * idx.texcoord_index + 1]
+                                     );
             }
 
             Vertex &v1 = vertices[vertices.size() - 3];
