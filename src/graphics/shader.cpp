@@ -24,19 +24,35 @@ void Shader::bind() {
     glUseProgram(m_programId);
 }
 
-void Shader::setInt(const std::string &name, s32 value) {
+void Shader::setUniform(const std::string &name, const Texture &texture) {
+    // Get active texture
+    auto it = m_textureUnits.find(name);
+    s32 unit = 0;
+    if (it == m_textureUnits.end()) {
+        unit = m_textureUnits.size();
+        m_textureUnits[name] = unit;
+    } else {
+        unit = it->second;
+    }
+
+    // Set uniform
+    texture.bind(unit);
+    setUniform(name, unit);
+}
+
+void Shader::setUniform(const std::string &name, s32 value) {
     glUniform1i(getUniformLocation(name), value);
 }
 
-void Shader::setFloat(const std::string &name, f32 value) {
+void Shader::setUniform(const std::string &name, f32 value) {
     glUniform1f(getUniformLocation(name), value);
 }
 
-void Shader::setVec3(const std::string &name, glm::vec3 value) {
+void Shader::setUniform(const std::string &name, glm::vec3 value) {
     glUniform3f(getUniformLocation(name), value.x, value.y, value.z);
 }
 
-void Shader::setMat4(const std::string &name, glm::mat4 value) {
+void Shader::setUniform(const std::string &name, glm::mat4 value) {
     glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, &value[0][0]);
 }
 
@@ -84,6 +100,7 @@ void Shader::destroy() {
     glDeleteProgram(m_programId);
     m_programId = 0;
     m_uniformLocations.clear();
+    m_textureUnits.clear();
 }
 
 u32 Shader::compileAndAttach(u32 shader_type, const char *shader_src, const char *debug_shader_path) {

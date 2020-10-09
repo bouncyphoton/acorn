@@ -178,12 +178,11 @@ void Renderer::updateIblProbe() {
                    .build());
 
     m_diffuseIrradianceShader.bind();
-    m_environmentMap.bind(0);
-    m_diffuseIrradianceShader.setInt("uEnvMap", 0);
+    m_diffuseIrradianceShader.setUniform("uEnvMap", m_environmentMap);
 
     for (u32 face = 0; face < 6; ++face) {
         // set current face as output color attachment
-        m_diffuseIrradianceShader.setMat4("uViewProjectionMatrix", proj * views[face]);
+        m_diffuseIrradianceShader.setUniform("uViewProjectionMatrix", proj * views[face]);
         m_ctx.setRenderTarget(m_diffuseIrradianceCubemap, (RenderContext::CubemapFaceEnum)face);
         m_ctx.clear(RenderContext::CLEAR_COLOR);
 
@@ -199,8 +198,7 @@ void Renderer::updateIblProbe() {
     //--------------------------
 
     m_envMapPrefilterShader.bind();
-    m_environmentMap.bind(0);
-    m_envMapPrefilterShader.setInt("uEnvMap", 0);
+    m_envMapPrefilterShader.setUniform("uEnvMap", m_environmentMap);
 
     // calculate mipmap levels
     m_numPrefilteredEnvMipmapLevels = floor(log2(consts::PREFILTERED_ENVIRONMENT_MAP_TEXTURE_SIZE));
@@ -208,11 +206,11 @@ void Renderer::updateIblProbe() {
     for (u32 level = 0; level <= m_numPrefilteredEnvMipmapLevels; ++level) {
         // set current roughness for prefilter
         f32 roughness = (f32) level / (f32) (m_numPrefilteredEnvMipmapLevels);
-        m_envMapPrefilterShader.setFloat("uRoughness", roughness);
+        m_envMapPrefilterShader.setUniform("uRoughness", roughness);
 
         for (u32 face = 0; face < 6; ++face) {
             // set current face as output color attachment
-            m_envMapPrefilterShader.setMat4("uViewProjectionMatrix", proj * views[face]);
+            m_envMapPrefilterShader.setUniform("uViewProjectionMatrix", proj * views[face]);
             m_ctx.setRenderTarget(m_prefilteredEnvCubemap, (RenderContext::CubemapFaceEnum)face, level);
             m_ctx.clear(RenderContext::CLEAR_COLOR);
 
@@ -228,44 +226,20 @@ void Renderer::renderFrame() {
 
     // draw scene
     {
+        m_renderStats = {};
+
         m_ctx.setState(RenderStateBuilder()
                        .setDepthTest(true)
                        .build());
 
-        m_renderStats = {};
-
         m_materialShader.bind();
-
-        u32 textureIdx = 0;
-
-        m_diffuseIrradianceCubemap.bind(textureIdx);
-        m_materialShader.setInt("uDiffuseIrradianceMap", textureIdx);
-        ++textureIdx;
-
-        m_prefilteredEnvCubemap.bind(textureIdx);
-        m_materialShader.setInt("uPrefilteredEnvironmentMap", textureIdx);
-        ++textureIdx;
-
-        m_materialShader.setInt("uNumPrefilteredEnvMipmapLevels", m_numPrefilteredEnvMipmapLevels);
-
-        m_brdfLut.bind(textureIdx);
-        m_materialShader.setInt("uBrdfLut", textureIdx);
-        ++textureIdx;
-
-        const u32 startTextureIdx = textureIdx;
-
-        // sun
-        m_materialShader.setVec3("uSunDirection", core->gameState.scene.sunDirection);
-
-        // camera
-        f32 aspectRatio = (f32) core->gameState.renderOptions.width / core->gameState.renderOptions.height;
-        glm::mat4 viewMatrix = glm::lookAt(core->gameState.camera.position, core->gameState.camera.lookAt,
-                                           glm::vec3(0, 1, 0));
-        glm::mat4 projectionMatrix = glm::perspective(core->gameState.camera.fovRadians, aspectRatio, 0.001f,
-                                                      1000.0f);
-        glm::mat4 viewProjectionMatrix = projectionMatrix * viewMatrix;
-        m_materialShader.setMat4("uViewProjectionMatrix", viewProjectionMatrix);
-        m_materialShader.setVec3("uCameraPosition", core->gameState.camera.position);
+        m_materialShader.setUniform("uDiffuseIrradianceMap", m_diffuseIrradianceCubemap);
+        m_materialShader.setUniform("uPrefilteredEnvironmentMap", m_prefilteredEnvCubemap);
+        m_materialShader.setUniform("uNumPrefilteredEnvMipmapLevels", m_numPrefilteredEnvMipmapLevels);
+        m_materialShader.setUniform("uBrdfLut", m_brdfLut);
+        m_materialShader.setUniform("uSunDirection", core->gameState.scene.sunDirection);
+        m_materialShader.setUniform("uViewProjectionMatrix", core->gameState.camera.getViewProjectionMatrix());
+        m_materialShader.setUniform("uCameraPosition", core->gameState.camera.getPosition());
 
         // render entities
         for (const Entity &entity : core->gameState.scene.getEntities()) {
@@ -274,34 +248,17 @@ void Renderer::renderFrame() {
             }
 
             glm::mat4 modelMatrix = transform_to_matrix(entity.transform);
-            m_materialShader.setMat4("uModelMatrix", modelMatrix);
-            m_materialShader.setMat4("uNormalMatrix", glm::transpose(glm::inverse(modelMatrix)));
+            m_materialShader.setUniform("uModelMatrix", modelMatrix);
+            m_materialShader.setUniform("uNormalMatrix", glm::transpose(glm::inverse(modelMatrix)));
 
             // render each mesh in model
             for (auto &mesh : entity.model->getMeshes()) {
-                textureIdx = startTextureIdx;
-
-                glActiveTexture(GL_TEXTURE0 + textureIdx);
-                glBindTexture(GL_TEXTURE_2D, mesh.getMaterial().albedoTexture);
-                m_materialShader.setInt("uMaterial.albedo", textureIdx);
-                ++textureIdx;
-
-                glActiveTexture(GL_TEXTURE0 + textureIdx);
-                glBindTexture(GL_TEXTURE_2D, mesh.getMaterial().normalTexture);
-                m_materialShader.setInt("uMaterial.normal", textureIdx);
-                ++textureIdx;
-
-                glActiveTexture(GL_TEXTURE0 + textureIdx);
-                glBindTexture(GL_TEXTURE_2D, mesh.getMaterial().metallicTexture);
-                m_materialShader.setInt("uMaterial.metallic", textureIdx);
-                m_materialShader.setFloat("uMaterial.metallic_scale", mesh.getMaterial().metallicScale);
-                ++textureIdx;
-
-                glActiveTexture(GL_TEXTURE0 + textureIdx);
-                glBindTexture(GL_TEXTURE_2D, mesh.getMaterial().roughnessTexture);
-                m_materialShader.setInt("uMaterial.roughness", textureIdx);
-                m_materialShader.setFloat("uMaterial.roughness_scale", mesh.getMaterial().roughnessScale);
-                ++textureIdx;
+                m_materialShader.setUniform("uMaterial.albedo", *mesh.getMaterial().albedoTexture);
+                m_materialShader.setUniform("uMaterial.normal", *mesh.getMaterial().normalTexture);
+                m_materialShader.setUniform("uMaterial.metallic", *mesh.getMaterial().metallicTexture);
+                m_materialShader.setUniform("uMaterial.metallic_scale", mesh.getMaterial().metallicScale);
+                m_materialShader.setUniform("uMaterial.roughness", *mesh.getMaterial().roughnessTexture);
+                m_materialShader.setUniform("uMaterial.roughness_scale", mesh.getMaterial().roughnessScale);
 
                 mesh.draw();
 
@@ -319,18 +276,13 @@ void Renderer::renderFrame() {
                        .setDepthFunc(DepthFuncEnum::LESS_EQUAL)
                        .build());
 
+        Camera skyboxCamera = core->gameState.camera;
+        skyboxCamera.setLookPosition(skyboxCamera.getLookPosition() - skyboxCamera.getPosition());
+        skyboxCamera.setPosition(glm::vec3(0));
+
         m_skyShader.bind();
-
-        f32 aspectRatio = core->gameState.renderOptions.width / (f32) core->gameState.renderOptions.height;
-
-        m_skyShader.setMat4("uViewProjectionMatrix",
-                            glm::perspective(core->gameState.camera.fovRadians, aspectRatio, 0.01f, 10.0f) *
-                            glm::lookAt(glm::vec3(0),
-                                        core->gameState.camera.lookAt - core->gameState.camera.position,
-                                        glm::vec3(0, 1, 0)));
-
-        m_environmentMap.bind(0);
-        m_skyShader.setInt("uEnvMap", 0);
+        m_skyShader.setUniform("uViewProjectionMatrix", skyboxCamera.getViewProjectionMatrix());
+        m_skyShader.setUniform("uEnvMap", m_environmentMap);
 
         drawNVertices(14);
     }
@@ -343,9 +295,8 @@ void Renderer::renderFrame() {
                        .build());
 
         m_tonemapShader.bind();
-        m_hdrFrameTexture.bind(0);
-        m_tonemapShader.setInt("uImage", 0);
-        m_tonemapShader.setFloat("uExposure", core->gameState.camera.exposure);
+        m_tonemapShader.setUniform("uImage", m_hdrFrameTexture);
+        m_tonemapShader.setUniform("uExposure", core->gameState.camera.getExposure());
 
         drawNVertices(4);
     }

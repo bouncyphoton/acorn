@@ -56,19 +56,12 @@ void Core::run() {
     entityHandle_t rockHandle = gameState.scene.addEntity(rockEntity);
     entityHandle_t planeHandle = gameState.scene.addEntity(planeEntity);
 
+    gameState.camera.setPosition(glm::vec3(1.5, 1, -2));
+    gameState.camera.setLookPosition(glm::vec3(0.75, 1, 0));
+
     while (true) {
         platform.update();
 
-        // TODO: remove temporary update
-        {
-            if (gameState.camera.isOrbiting) {
-                f32 t = glfwGetTime() * 0.25f;
-                gameState.camera.position = glm::vec3(cos(t) * 2, 1, sin(t) * 2);
-                gameState.camera.lookAt = glm::vec3(0, 1, 0);
-            }
-        }
-
-        // draw frame
         renderer.render();
 
         debugGui.draw();
@@ -79,4 +72,3 @@ void Core::quit() {
     Log::info("Quitting normally");
     exit(0);
 }
-

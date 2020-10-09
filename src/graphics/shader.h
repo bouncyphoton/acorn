@@ -2,6 +2,7 @@
 #define ACORN_SHADER_H
 
 #include "types.h"
+#include "texture.h"
 #include <glm/glm.hpp>
 #include <string>
 #include <unordered_map>
@@ -18,17 +19,20 @@ public:
     /// Bind shader for usage
     void bind();
 
+    /// Set texture uniform
+    void setUniform(const std::string &name, const Texture &texture);
+
     /// Set int shader uniform
-    void setInt(const std::string &name, s32 value);
+    void setUniform(const std::string &name, s32 value);
 
     /// Set float shader uniform
-    void setFloat(const std::string &name, f32 value);
+    void setUniform(const std::string &name, f32 value);
 
     /// Set vec3 shader uniform
-    void setVec3(const std::string &name, glm::vec3 value);
+    void setUniform(const std::string &name, glm::vec3 value);
 
     /// Set mat4 shader uniform
-    void setMat4(const std::string &name, glm::mat4 value);
+    void setUniform(const std::string &name, glm::mat4 value);
 
 private:
     /// Load shaders from files
@@ -43,6 +47,7 @@ private:
 
     u32 m_programId = 0;
     std::unordered_map<std::string, u32> m_uniformLocations;
+    std::unordered_map<std::string, u32> m_textureUnits;
     std::string m_vertexPath;
     std::string m_fragmentPath;
 };

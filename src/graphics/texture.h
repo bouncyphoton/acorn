@@ -16,7 +16,7 @@ public:
     Texture &operator=(Texture &&other) noexcept;
     virtual ~Texture();
 
-    virtual void bind(u32 unit) = 0;
+    virtual void bind(u32 unit) const = 0;
 
     u32 getId() const {
         return m_id;
@@ -31,7 +31,7 @@ public:
     /// Inherit constructors
     using Texture::Texture;
 
-    void bind(u32 unit) override;
+    void bind(u32 unit) const override;
 
     void setImage(int width, int height, TextureFormatEnum format, void *data = nullptr);
 
@@ -55,7 +55,7 @@ public:
     /// Inherit constructors
     using Texture::Texture;
 
-    void bind(u32 unit) override;
+    void bind(u32 unit) const override;
 
     void setImage(int side_length, TextureFormatEnum format, void *data[6] = nullptr);
 
