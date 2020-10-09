@@ -1,5 +1,5 @@
 #include "framebuffer.h"
-#include "core.h"
+#include "log.h"
 #include <cmath>
 
 Framebuffer::Framebuffer() {
@@ -8,12 +8,12 @@ Framebuffer::Framebuffer() {
 
     glGenFramebuffers(1, &m_id);
     if (m_id == 0) {
-        core->fatal("Failed to create Framebuffer");
+        Log::fatal("Failed to create Framebuffer");
     }
     glBindFramebuffer(GL_FRAMEBUFFER, m_id);
 
     glBindFramebuffer(GL_FRAMEBUFFER, previouslyBound);
-    core->debug("Framebuffer::Framebuffer() - #" + std::to_string(m_id));
+    Log::debug("Framebuffer::Framebuffer() - #%d", m_id);
 }
 
 Framebuffer::Framebuffer(Framebuffer &&other) noexcept
@@ -34,7 +34,7 @@ Framebuffer &Framebuffer::operator=(Framebuffer &&other) noexcept {
 }
 
 Framebuffer::~Framebuffer() {
-    core->debug("Framebuffer::~Framebuffer() - #" + std::to_string(m_id));
+    Log::debug("Framebuffer::~Framebuffer() - #%d", m_id);
     glDeleteRenderbuffers(1, &m_depthRenderbuffer);
     glDeleteFramebuffers(1, &m_id);
 }
@@ -119,7 +119,7 @@ void Framebuffer::handleRenderbufferCreation() {
     // Create depth renderbuffer for this texture
     glGenRenderbuffers(1, &m_depthRenderbuffer);
     if (m_depthRenderbuffer == 0) {
-        core->fatal("Failed to generate depth renderbuffer for framebuffer #" + std::to_string(m_id));
+        Log::fatal("Failed to generate depth renderbuffer for framebuffer #%d", m_id);
     }
     glBindRenderbuffer(GL_RENDERBUFFER, m_depthRenderbuffer);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, m_width, m_height);
@@ -128,6 +128,6 @@ void Framebuffer::handleRenderbufferCreation() {
     // Verify framebuffer completeness
     u32 status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE) {
-        core->fatal("Framebuffer #" + std::to_string(m_id) + " is incomplete: " + std::to_string(status));
+        Log::fatal("Framebuffer #%d is incomplete: %d", m_id, status);
     }
 }

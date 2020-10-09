@@ -20,18 +20,6 @@ public:
     /// Quit and cleanup
     [[noreturn]] void quit();
 
-    /// Log an informational message
-    void info(const std::string &msg);
-
-    /// Log a warning
-    void warn(const std::string &msg);
-
-    /// Log a debug message
-    void debug(const std::string &msg);
-
-    /// Log a fatal error and quit
-    [[noreturn]] void fatal(const std::string &msg);
-
     Config config;
     GameState gameState;
     Platform platform;

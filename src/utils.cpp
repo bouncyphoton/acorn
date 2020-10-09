@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "core.h"
+#include "log.h"
 #include "graphics/texture.h"
 
 #define STB_INCLUDE_IMPLEMENTATION
@@ -30,7 +31,7 @@ std::string load_shader_to_string(const char *file_path) {
     char *str = stb_include_file(const_cast<char *>(file_path), const_cast<char *>(inject),
                                  const_cast<char *>(directory.c_str()), error);
     if (!str) {
-        core->warn("Failed to load/preprocess shader: " + std::string(error));
+        Log::warn("Failed to load/preprocess shader: %s", error);
         return "";
     }
 
@@ -110,7 +111,7 @@ void get_format_info(TextureFormatEnum format, u32 *texture_format, u32 *data_fo
             *data_type = GL_FLOAT;
             break;
         default:
-            core->fatal("Tried to get info for unknown format: " + std::to_string(static_cast<u32>(format)));
+            Log::fatal("Tried to get info for unknown format: %d", (u32)format);
     }
 }
 }

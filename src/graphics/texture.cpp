@@ -1,14 +1,14 @@
 #include "texture.h"
-#include "core.h"
 #include "utils.h"
+#include "log.h"
 #include <GL/gl3w.h>
 
 Texture::Texture() {
     glGenTextures(1, &m_id);
     if (m_id == 0) {
-        core->fatal("Failed to create Texture");
+        Log::fatal("Failed to create Texture");
     }
-    core->debug("Texture::Texture() - #" + std::to_string(m_id));
+    Log::debug("Texture::Texture() - #%d", m_id);
 }
 
 Texture::Texture(Texture &&other) noexcept
@@ -23,7 +23,7 @@ Texture &Texture::operator=(Texture &&other) noexcept {
 }
 
 Texture::~Texture() {
-    core->debug("Texture::~Texture() - #" + std::to_string(m_id));
+    Log::debug("Texture::~Texture() - #%d", m_id);
     glDeleteTextures(1, &m_id);
 }
 
