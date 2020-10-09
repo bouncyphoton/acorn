@@ -1,5 +1,6 @@
 #include "framebuffer.h"
 #include "core.h"
+#include <cmath>
 
 Framebuffer::Framebuffer() {
     s32 previouslyBound;
@@ -76,8 +77,9 @@ void Framebuffer::attachTexture(const TextureCubemap &texture, u32 target, u32 l
     glBindFramebuffer(GL_FRAMEBUFFER, previouslyBound);
 }
 
-void Framebuffer::setViewport() {
-    glViewport(0, 0, m_width, m_height);
+void Framebuffer::setViewport(u32 mip_level) {
+    f32 scale = mip_level == 0 ? 1 : std::pow(0.5f, mip_level);
+    glViewport(0, 0, (u32)(m_width * scale), (u32)(m_height * scale));
 }
 
 void Framebuffer::bind() {
@@ -95,7 +97,7 @@ void Framebuffer::blit(Framebuffer &fbo, u32 mask, u32 filter) {
     glBindFramebuffer(GL_FRAMEBUFFER, previouslyBound);
 }
 
-void Framebuffer::blitToDefaultFramebuffer(u32 mask, u32 filter) {
+void Framebuffer::blitToDefaultFramebuffer(u32 mask, u32 filter) const {
     s32 previouslyBound;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &previouslyBound);
 

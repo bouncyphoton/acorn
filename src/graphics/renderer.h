@@ -46,7 +46,6 @@ private:
     RenderContext m_ctx;
 
     // common
-    Framebuffer m_targetFbo;
     Texture2D m_targetTexture;
     Texture2D m_hdrFrameTexture;
 

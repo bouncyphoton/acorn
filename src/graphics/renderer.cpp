@@ -106,7 +106,7 @@ void Renderer::render() {
     renderFrame();
 
     // blit rendered frame to default framebuffer
-    m_targetFbo.blitToDefaultFramebuffer(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+    m_ctx.getFramebuffer().blitToDefaultFramebuffer(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
     // bind default framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -145,7 +145,7 @@ void Renderer::precompute() {
                    .build());
 
     // Clear screen
-    m_ctx.clear(RenderContext::CLEAR_COLOR | RenderContext::CLEAR_DEPTH);
+    m_ctx.clear(RenderContext::CLEAR_COLOR);
 
     // Bind shader and draw vertices
     m_brdfLutShader.bind();
@@ -156,10 +156,6 @@ void Renderer::precompute() {
 }
 
 void Renderer::updateIblProbe() {
-    m_targetFbo.bind();
-    glDisable(GL_DEPTH_TEST);
-    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-
     // view and projection matrices for cubemap rendering
     glm::mat4 views[6] = {
         glm::lookAt(glm::vec3(0, 0, 0), glm::vec3(1, 0, 0), glm::vec3(0, -1, 0)),
@@ -177,6 +173,10 @@ void Renderer::updateIblProbe() {
     // diffuse irradiance convolution
     //-------------------------------
 
+    m_ctx.setState(RenderStateBuilder()
+                   .setDepthTest(false)
+                   .build());
+
     m_diffuseIrradianceShader.bind();
     m_environmentMap.bind(0);
     m_diffuseIrradianceShader.setInt("uEnvMap", 0);
@@ -184,16 +184,14 @@ void Renderer::updateIblProbe() {
     for (u32 face = 0; face < 6; ++face) {
         // set current face as output color attachment
         m_diffuseIrradianceShader.setMat4("uViewProjectionMatrix", proj * views[face]);
-        m_targetFbo.attachTexture(m_diffuseIrradianceCubemap, GL_TEXTURE_CUBE_MAP_POSITIVE_X + face);
-        m_targetFbo.setViewport();
-        glClear(GL_COLOR_BUFFER_BIT);
+        m_ctx.setRenderTarget(m_diffuseIrradianceCubemap, (RenderContext::CubemapFaceEnum)face);
+        m_ctx.clear(RenderContext::CLEAR_COLOR);
 
         // draw cube
         drawNVertices(14);
     }
 
     // update mipmap for diffuse irradiance cubemap
-    m_diffuseIrradianceCubemap.bind(0);
     m_diffuseIrradianceCubemap.generateMipmap();
 
     //--------------------------
@@ -212,30 +210,28 @@ void Renderer::updateIblProbe() {
         f32 roughness = (f32) level / (f32) (m_numPrefilteredEnvMipmapLevels);
         m_envMapPrefilterShader.setFloat("uRoughness", roughness);
 
-        u32 size = consts::PREFILTERED_ENVIRONMENT_MAP_TEXTURE_SIZE * pow(0.5f, level);
-        glViewport(0, 0, size, size);
-
         for (u32 face = 0; face < 6; ++face) {
             // set current face as output color attachment
             m_envMapPrefilterShader.setMat4("uViewProjectionMatrix", proj * views[face]);
-            m_targetFbo.attachTexture(m_prefilteredEnvCubemap, GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, level);
-            glClear(GL_COLOR_BUFFER_BIT);
+            m_ctx.setRenderTarget(m_prefilteredEnvCubemap, (RenderContext::CubemapFaceEnum)face, level);
+            m_ctx.clear(RenderContext::CLEAR_COLOR);
 
             // draw cube
             drawNVertices(14);
         }
     }
-
-    glEnable(GL_DEPTH_TEST);
 }
 
 void Renderer::renderFrame() {
-    m_targetFbo.bind();
-    m_targetFbo.attachTexture(m_hdrFrameTexture);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    m_ctx.setRenderTarget(m_hdrFrameTexture);
+    m_ctx.clear(RenderContext::CLEAR_COLOR | RenderContext::CLEAR_DEPTH);
 
     // draw scene
     {
+        m_ctx.setState(RenderStateBuilder()
+                       .setDepthTest(true)
+                       .build());
+
         m_renderStats = {};
 
         m_materialShader.bind();
@@ -317,8 +313,11 @@ void Renderer::renderFrame() {
 
     // draw sky
     {
-        glDepthFunc(GL_LEQUAL);
-        glDepthMask(GL_FALSE);
+        m_ctx.setState(RenderStateBuilder()
+                       .setDepthTest(true)
+                       .setDepthWrite(false)
+                       .setDepthFunc(DepthFuncEnum::LESS_EQUAL)
+                       .build());
 
         m_skyShader.bind();
 
@@ -334,63 +333,20 @@ void Renderer::renderFrame() {
         m_skyShader.setInt("uEnvMap", 0);
 
         drawNVertices(14);
-
-        glDepthMask(GL_TRUE);
-        glDepthFunc(GL_LESS);
-
-        /*
-         * skyPass = PassBuilder()
-         *           .setShader(m_skyShader)
-         *           .setOutput(m_hdrTexture)
-         *           .setExecute([&](RenderContext &ctx) {
-         *               glDepthFunc(GL_LEQUAL);
-         *               glDepthMask(GL_FALSE);
-         *
-         *               ctx.bind("uViewProjectionMatrix", core->gameState.camera.getViewProjectionMatrix());
-         *               ctx.bind("uEnvMap", m_environmentMap);
-         *               ctx.drawNVertices(14);
-         *
-         *               glDepthMask(GL_TRUE);
-         *               glDepthFunc(GL_LESS);
-         *           })
-         *           .build();
-         *
-         * skyPass.execute();
-         */
     }
 
     // tonemap
     {
-        m_targetFbo.attachTexture(m_targetTexture);
+        m_ctx.setRenderTarget(m_targetTexture);
+        m_ctx.setState(RenderStateBuilder()
+                       .setDepthTest(false)
+                       .build());
 
         m_tonemapShader.bind();
         m_hdrFrameTexture.bind(0);
         m_tonemapShader.setInt("uImage", 0);
         m_tonemapShader.setFloat("uExposure", core->gameState.camera.exposure);
 
-        glDisable(GL_DEPTH_TEST);
-
         drawNVertices(4);
-
-        glEnable(GL_DEPTH_TEST);
-
-        /*
-         * tonemapPass = PassBuilder()
-         *               .setShader(m_tonemapShader)
-         *               .setOutput(m_targetTexture)
-         *               .setExecute([&](RenderContext &ctx) {
-         *                   glDisable(GL_DEPTH_TEST);
-         *
-         *                   ctx.clear(COLOR | BUFFER);
-         *                   ctx.bind("uImage", m_hdrFrameTexture);
-         *                   ctx.bind("uExposure, core->gameState.camera.exposure);
-         *                   ctx.drawNVertices(4);
-         *
-         *                   glEnable(GL_DEPTH_TEST);
-         *               })
-         *               .build();
-         *
-         * tonemapPass.execute();
-         */
     }
 }
