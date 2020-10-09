@@ -10,6 +10,6 @@ glm::mat4 Camera::getViewProjectionMatrix() const {
     f32 aspectRatio = (f32) core->gameState.renderOptions.width / core->gameState.renderOptions.height;
 
     glm::mat4 viewMatrix = glm::lookAt(m_position, m_lookPosition, UP);
-    glm::mat4 projectionMatrix = glm::perspective(m_fov, aspectRatio, 0.001f, 1000.0f);
+    glm::mat4 projectionMatrix = glm::perspective(m_fov, aspectRatio, m_nearPlane, m_farPlane);
     return projectionMatrix * viewMatrix;
 }
