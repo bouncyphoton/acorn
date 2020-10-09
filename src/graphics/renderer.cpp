@@ -238,16 +238,8 @@ void Renderer::renderFrame() {
         m_materialShader.setUniform("uNumPrefilteredEnvMipmapLevels", m_numPrefilteredEnvMipmapLevels);
         m_materialShader.setUniform("uBrdfLut", m_brdfLut);
         m_materialShader.setUniform("uSunDirection", core->gameState.scene.sunDirection);
-
-        // camera
-        f32 aspectRatio = (f32) core->gameState.renderOptions.width / core->gameState.renderOptions.height;
-        glm::mat4 viewMatrix = glm::lookAt(core->gameState.camera.position, core->gameState.camera.lookAt,
-                                           glm::vec3(0, 1, 0));
-        glm::mat4 projectionMatrix = glm::perspective(core->gameState.camera.fovRadians, aspectRatio, 0.001f,
-                                                      1000.0f);
-        glm::mat4 viewProjectionMatrix = projectionMatrix * viewMatrix;
-        m_materialShader.setUniform("uViewProjectionMatrix", viewProjectionMatrix);
-        m_materialShader.setUniform("uCameraPosition", core->gameState.camera.position);
+        m_materialShader.setUniform("uViewProjectionMatrix", core->gameState.camera.getViewProjectionMatrix());
+        m_materialShader.setUniform("uCameraPosition", core->gameState.camera.getPosition());
 
         // render entities
         for (const Entity &entity : core->gameState.scene.getEntities()) {
@@ -284,16 +276,12 @@ void Renderer::renderFrame() {
                        .setDepthFunc(DepthFuncEnum::LESS_EQUAL)
                        .build());
 
+        Camera skyboxCamera = core->gameState.camera;
+        skyboxCamera.setLookPosition(skyboxCamera.getLookPosition() - skyboxCamera.getPosition());
+        skyboxCamera.setPosition(glm::vec3(0));
+
         m_skyShader.bind();
-
-        f32 aspectRatio = core->gameState.renderOptions.width / (f32) core->gameState.renderOptions.height;
-
-        m_skyShader.setUniform("uViewProjectionMatrix",
-                               glm::perspective(core->gameState.camera.fovRadians, aspectRatio, 0.01f, 10.0f) *
-                               glm::lookAt(glm::vec3(0),
-                                           core->gameState.camera.lookAt - core->gameState.camera.position,
-                                           glm::vec3(0, 1, 0)));
-
+        m_skyShader.setUniform("uViewProjectionMatrix", skyboxCamera.getViewProjectionMatrix());
         m_skyShader.setUniform("uEnvMap", m_environmentMap);
 
         drawNVertices(14);
@@ -308,7 +296,7 @@ void Renderer::renderFrame() {
 
         m_tonemapShader.bind();
         m_tonemapShader.setUniform("uImage", m_hdrFrameTexture);
-        m_tonemapShader.setUniform("uExposure", core->gameState.camera.exposure);
+        m_tonemapShader.setUniform("uExposure", core->gameState.camera.getExposure());
 
         drawNVertices(4);
     }

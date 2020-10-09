@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "scene.h"
+#include "camera.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 
@@ -12,18 +13,10 @@ struct RenderOptions {
     u32 vsyncNumSwapFrames = 1;
 };
 
-struct Camera {
-    glm::vec3 position = glm::vec3(0);
-    glm::vec3 lookAt = glm::vec3(0, 0, -1);
-    f32 fovRadians = glm::half_pi<f32>();
-    f32 exposure = 1.0f;
-    bool isOrbiting = true;
-};
-
 struct GameState {
     RenderOptions renderOptions = {};
-    Camera camera = {};
     Scene scene = {};
+    Camera camera;
 };
 
 #endif //ACORN_GAME_STATE_H
