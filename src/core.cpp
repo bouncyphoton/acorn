@@ -62,8 +62,8 @@ void Core::run() {
     while (true) {
         platform.update();
 
-        f32 speed = platform.isKeyDown(GLFW_KEY_LEFT_SHIFT) ? 0.5f : 0.1f;
-        f32 dt = 1.0f;
+        f32 speed = platform.isKeyDown(GLFW_KEY_LEFT_SHIFT) ? 10.0f : 1.0f;
+        f32 dt = platform.getDeltaTime();
         if (platform.isKeyDown(GLFW_KEY_W)) {
             gameState.camera.addPosition(gameState.camera.getForward() * speed * dt);
         }

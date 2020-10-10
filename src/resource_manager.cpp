@@ -43,7 +43,8 @@ Texture *ResourceManager::getTexture(const std::string &path) {
     s32 width, height, channels;
     u8 *data = stbi_load(path.c_str(), &width, &height, &channels, 4);
     if (!data) {
-        Log::fatal("Failed to load image '%s'\n%s", path.c_str(), stbi_failure_reason());
+        Log::warn("Failed to load image '%s'\n%s", path.c_str(), stbi_failure_reason());
+        return getBuiltInTexture(BuiltInTextureEnum::MISSING);
     }
 
     Texture2D *texture = new Texture2D();

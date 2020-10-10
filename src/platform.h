@@ -35,6 +35,8 @@ public:
 
     glm::vec2 getMouseDelta() const;
 
+    float getDeltaTime() const;
+
 private:
     void init();
 
@@ -44,6 +46,10 @@ private:
 
     Input m_input;
     glm::vec2 m_previousCursorPosition = glm::vec2(0);
+
+    f32 m_previousTime;
+    f32 m_currentTime;
+    f32 m_deltaTime;
 };
 
 #endif //ACORN_PLATFORM_H

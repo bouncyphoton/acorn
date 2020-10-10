@@ -49,6 +49,10 @@ void Platform::update() {
     if (glfwWindowShouldClose(m_window)) {
         core->quit();
     }
+
+    m_previousTime = m_currentTime;
+    m_currentTime = glfwGetTime();
+    m_deltaTime = m_currentTime - m_previousTime;
 }
 
 GLFWwindow *Platform::getGlfwWindow() {
@@ -99,6 +103,8 @@ void Platform::init() {
     }
 
     glfwSwapInterval(core->gameState.renderOptions.vsyncNumSwapFrames);
+
+    m_currentTime = glfwGetTime();
 }
 
 void Platform::destroy() {
@@ -122,4 +128,8 @@ bool Platform::isMouseGrabbed() const {
 
 glm::vec2 Platform::getMouseDelta() const {
     return m_input.cursorPosition - m_previousCursorPosition;
+}
+
+float Platform::getDeltaTime() const {
+    return m_deltaTime;
 }
