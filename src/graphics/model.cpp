@@ -3,10 +3,9 @@
 #include "log.h"
 #include "utils.h"
 
-// TODO: move away from OBJs to binary blobs for meshes
-#define TINYOBJLOADER_IMPLEMENTATION
-
-#include <tiny_obj_loader.h>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 #undef min
 #undef max
@@ -26,13 +25,19 @@ Model::~Model() {
 }
 
 void Model::init(const std::string &path) {
-    size_t slashIdx = path.rfind('/');
-    if (slashIdx == std::string::npos) {
-        Log::fatal("Failed to find directory for model path: '%s'", path.c_str());
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(path.c_str(),
+                                             aiProcess_CalcTangentSpace |
+                                             aiProcess_Triangulate |
+                                             aiProcess_GenNormals);
+
+    if (!scene) {
+        Log::fatal("Failed to load model: %s", importer.GetErrorString());
     }
 
-    std::string dir = path.substr(0, slashIdx);
+    // Process scene
 
+/*
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> tinyObjMaterials;
@@ -164,5 +169,5 @@ void Model::init(const std::string &path) {
         if (!meshVertices[i].empty()) {
             m_meshes.emplace_back(meshVertices[i], meshMaterials[i]);
         }
-    }
+    }*/
 }
