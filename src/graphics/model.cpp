@@ -118,8 +118,12 @@ void Model::init(const std::string &path) {
             aiString metalRoughPath;
             if (aiMat->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE,
                                   &metalRoughPath) == aiReturn_SUCCESS) {
-                Log::info("Combined path");
-                // TODO
+                std::string texPath = dir + std::string(metalRoughPath.C_Str());
+                std::replace(texPath.begin(), texPath.end(), '\\', '/');
+
+                // Seems that usually this is occlusion, roughness, metallic (RGB respectively)?
+                core->resourceManager.getTextureSplitComponents(texPath, nullptr, &material.roughnessTexture,
+                                                                &material.metallicTexture, nullptr);
             }
 
             aiMat->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR, material.metallicScale);

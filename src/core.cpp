@@ -15,26 +15,26 @@ Core::~Core() {
 
 void Core::run() {
     // TODO: ECS
-    Entity helmetEntity = {
-        resourceManager.getModel("../assets/glTF-Sample-Models/2.0/FlightHelmet/glTF/FlightHelmet.gltf"),
-        Transform{
-            glm::vec3(0, 0, 0),
-            glm::identity<glm::quat>(),
-            glm::vec3(1.0f)
-        }
+    Entity boomBox = {
+            resourceManager.getModel("../assets/glTF-Sample-Models/2.0/BoomBox/glTF/BoomBox.gltf"),
+            Transform{
+                    glm::vec3(0, 2, 0),
+                    glm::vec3(0, glm::half_pi<f32>(), 0),
+                    glm::vec3(100.0f)
+            }
     };
 
-    Entity planeEntity = {
-        resourceManager.getBuiltInModel(BuiltInModelEnum::PLANE),
-        Transform{
-            glm::vec3(0),
-            glm::identity<glm::quat>(),
-            glm::vec3(10)
-        }
+    Entity helmet = {
+            resourceManager.getModel("../assets/glTF-Sample-Models/2.0/FlightHelmet/glTF/FlightHelmet.gltf"),
+            Transform{
+                    glm::vec3(0, 0, 2.5),
+                    glm::vec3(0, glm::three_over_two_pi<f32>(), 0),
+                    glm::vec3(5.0f)
+            }
     };
 
-    entityHandle_t helmetHandle = gameState.scene.addEntity(helmetEntity);
-    entityHandle_t planeHandle = gameState.scene.addEntity(planeEntity);
+    gameState.scene.addEntity(boomBox);
+    gameState.scene.addEntity(helmet);
 
     gameState.camera.setPosition(glm::vec3(1.5, 1, -2));
     gameState.camera.setLookRotation(glm::vec2(glm::half_pi<f32>(), 0));

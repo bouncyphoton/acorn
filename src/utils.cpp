@@ -75,6 +75,11 @@ void get_format_info(TextureFormatEnum format, u32 *texture_format, u32 *data_fo
     *data_type = 0;
 
     switch (format) {
+        case TextureFormatEnum::R8:
+            *texture_format = GL_RED;
+            *data_format = GL_RED;
+            *data_type = GL_UNSIGNED_BYTE;
+            break;
         case TextureFormatEnum::RGB8:
             *texture_format = GL_RGB;
             *data_format = GL_RGB;

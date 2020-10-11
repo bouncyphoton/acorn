@@ -56,6 +56,63 @@ Texture *ResourceManager::getTexture(const std::string &path) {
     return texture;
 }
 
+void ResourceManager::getTextureSplitComponents(const std::string &path, Texture **texture_red,
+                                                Texture **texture_green, Texture **texture_blue,
+                                                Texture **texture_alpha) {
+    Texture **outTextures[4] = {texture_red, texture_green, texture_blue, texture_alpha};
+    std::string suffixes[4] = {"_r", "_g", "_b", "_a"};
+
+    // See if textures are already loaded
+    for (u32 i = 0; i < 4; ++i) {
+        auto it = m_textures.find(path + suffixes[i]);
+        if (outTextures[i] && it != m_textures.end()) {
+            *outTextures[i] = it->second;
+            outTextures[i] = nullptr;
+        }
+    }
+
+    // Try to load texture
+    Log::info("Loading texture '%s'", path.c_str());
+
+    s32 width, height, channels;
+    u8 *data = stbi_load(path.c_str(), &width, &height, &channels, 4);
+    if (!data) {
+        Log::warn("Failed to load image '%s'\n%s", path.c_str(), stbi_failure_reason());
+
+        for (auto &ppTex : outTextures) {
+            if (!ppTex) {
+                continue;
+            }
+            *ppTex = getBuiltInTexture(BuiltInTextureEnum::MISSING);
+        }
+
+        return;
+    }
+
+    // We will reuse this memory instead of doing 4 malloc/frees
+    u8 *componentData = (u8 *)malloc(width * height);
+
+    for (u32 i = 0; i < 4; ++i) {
+        Texture **ppTex = outTextures[i];
+        if (!ppTex) {
+            continue;
+        }
+
+        // Make a texture with just one channel
+        for (u32 j = 0; j < width * height * 4; j += 4) {
+            componentData[j / 4] = data[j + i];
+        }
+
+        Texture2D *texture = new Texture2D();
+        texture->setImage(width, height, TextureFormatEnum::R8, componentData);
+        *ppTex = texture;
+        m_textures.emplace(path + suffixes[i], texture);
+    }
+
+    free(componentData);
+    stbi_image_free(data);
+}
+
 Texture *ResourceManager::getBuiltInTexture(BuiltInTextureEnum tex) {
     switch (tex) {
         case BuiltInTextureEnum::BLACK:

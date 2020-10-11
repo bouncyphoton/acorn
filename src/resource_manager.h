@@ -26,6 +26,10 @@ public:
     /// Get a texture and if not loaded, load
     Texture *getTexture(const std::string &path);
 
+    /// Get a texture and split image channels into separate textures. Pointers can be null
+    void getTextureSplitComponents(const std::string &path, Texture **texture_red, Texture **texture_green,
+                                   Texture **texture_blue, Texture **texture_alpha);
+
     /// Get a built in texture
     Texture *getBuiltInTexture(BuiltInTextureEnum tex);
 
