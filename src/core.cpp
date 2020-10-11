@@ -14,30 +14,12 @@ Core::~Core() {
 }
 
 void Core::run() {
-    // TODO: make this less weird to work with
-    Entity sphereEntity = {
-        resourceManager.getModel("../assets/spheres/spheres.obj"),
+    // TODO: ECS
+    Entity helmetEntity = {
+        resourceManager.getModel("../assets/glTF-Sample-Models/2.0/FlightHelmet/glTF/FlightHelmet.gltf"),
         Transform{
-            glm::vec3(0, 1.15, 0),
+            glm::vec3(0, 0, 0),
             glm::identity<glm::quat>(),
-            glm::vec3(1.0f)
-        }
-    };
-
-    Entity rifleEntity = {
-        resourceManager.getModel("../assets/stylized-rifle/Stylized_rifle_final.obj"),
-        Transform{
-            glm::vec3(0, 0.55, -0.35),
-            glm::vec3(0, glm::half_pi<f32>(), 0),
-            glm::vec3(0.01f)
-        }
-    };
-
-    Entity rockEntity = {
-        resourceManager.getModel("../assets/rock03/3DRock003_16K.obj"),
-        Transform{
-            glm::vec3(0, 0.55, 0.35),
-            glm::vec3(0, glm::half_pi<f32>(), 0),
             glm::vec3(1.0f)
         }
     };
@@ -51,9 +33,7 @@ void Core::run() {
         }
     };
 
-    entityHandle_t sphereHandle = gameState.scene.addEntity(sphereEntity);
-    entityHandle_t rifleHandle = gameState.scene.addEntity(rifleEntity);
-    entityHandle_t rockHandle = gameState.scene.addEntity(rockEntity);
+    entityHandle_t helmetHandle = gameState.scene.addEntity(helmetEntity);
     entityHandle_t planeHandle = gameState.scene.addEntity(planeEntity);
 
     gameState.camera.setPosition(glm::vec3(1.5, 1, -2));
