@@ -4,9 +4,12 @@
 [submodule "third-party/glm"]
 	path = third-party/glm
 	url = https://github.com/g-truc/glm.git
-[submodule "third-party/tinyobjloader"]
-	path = third-party/tinyobjloader
-	url = https://github.com/tinyobjloader/tinyobjloader.git
 [submodule "third-party/stb"]
 	path = third-party/stb
 	url = https://github.com/nothings/stb.git
+[submodule "third-party/assimp"]
+	path = third-party/assimp
+	url = https://github.com/assimp/assimp.git
+[submodule "assets/glTF-Sample-Models"]
+	path = assets/glTF-Sample-Models
+	url = https://github.com/KhronosGroup/glTF-Sample-Models.git

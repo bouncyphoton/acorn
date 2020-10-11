@@ -3,10 +3,10 @@
 #include "log.h"
 #include "utils.h"
 
-// TODO: move away from OBJs to binary blobs for meshes
-#define TINYOBJLOADER_IMPLEMENTATION
-
-#include <tiny_obj_loader.h>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+#include <assimp/pbrmaterial.h>
 
 #undef min
 #undef max
@@ -26,143 +26,110 @@ Model::~Model() {
 }
 
 void Model::init(const std::string &path) {
-    size_t slashIdx = path.rfind('/');
-    if (slashIdx == std::string::npos) {
-        Log::fatal("Failed to find directory for model path: '%s'", path.c_str());
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(path.c_str(),
+                                             aiProcess_CalcTangentSpace |
+                                             aiProcess_Triangulate |
+                                             aiProcess_GenNormals |
+                                             aiProcess_GenUVCoords);
+
+    if (!scene) {
+        Log::fatal("Failed to load model: %s", importer.GetErrorString());
     }
 
-    std::string dir = path.substr(0, slashIdx);
+    std::string dir = path.substr(0, path.find_last_of('/') + 1);
 
-    tinyobj::attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> tinyObjMaterials;
-    std::string warn, err;
+    // Process scene
+    for (u32 m = 0; m < scene->mNumMeshes; ++m) {
+        aiMesh *mesh = scene->mMeshes[m];
 
-    bool result = tinyobj::LoadObj(&attrib, &shapes, &tinyObjMaterials, &warn, &err, path.c_str(), dir.c_str(), true);
-    if (!warn.empty()) {
-        Log::warn(warn.c_str());
-    }
-    if (!err.empty()) {
-        Log::fatal(err.c_str());
-    }
-    if (!result) {
-        Log::fatal("Failed to load OBJ '%s'", path.c_str());
-    }
+        // TODO: index buffer
 
-    bool hasNormals = !attrib.normals.empty();
+        std::vector<Vertex> vertices;
+        vertices.reserve(mesh->mNumFaces * 3);
+        for (u32 f = 0; f < mesh->mNumFaces; ++f) {
+            aiFace face = mesh->mFaces[f];
+            for (u32 i = 0; i < face.mNumIndices; ++i) {
+                u32 v = face.mIndices[i];
+                Vertex vertex = {};
 
-    // Append default material
-    tinyObjMaterials.emplace_back();
+                vertex.position = {
+                    mesh->mVertices[v].x,
+                    mesh->mVertices[v].y,
+                    mesh->mVertices[v].z
+                };
 
-    // Each mesh has exactly one material
-    u32 numMeshes = tinyObjMaterials.size();
-    std::vector<Material> meshMaterials;
-    meshMaterials.resize(numMeshes);
-    std::vector<std::vector<Vertex>> meshVertices(numMeshes);
-    meshVertices.resize(numMeshes);
+                vertex.normal = {
+                    mesh->mNormals[v].x,
+                    mesh->mNormals[v].y,
+                    mesh->mNormals[v].z
+                };
 
-    // Set materials
-    for (u32 i = 0; i < numMeshes; ++i) {
-        // Diffuse texture
-        if (!tinyObjMaterials[i].diffuse_texname.empty()) {
-            meshMaterials[i].albedoTexture = core->resourceManager.getTexture(dir + "/" + tinyObjMaterials[i].diffuse_texname);
-        } else {
-            meshMaterials[i].albedoTexture = core->resourceManager.getBuiltInTexture(BuiltInTextureEnum::MISSING);
-        }
+                vertex.uv = {
+                    mesh->mTextureCoords[0][v].x,
+                    mesh->mTextureCoords[0][v].y
+                };
 
-        // Normal texture
-        if (!tinyObjMaterials[i].normal_texname.empty()) {
-            meshMaterials[i].normalTexture = core->resourceManager.getTexture(dir + "/" + tinyObjMaterials[i].normal_texname);
-        } else if (!tinyObjMaterials[i].bump_texname.empty()) {
-            meshMaterials[i].normalTexture = core->resourceManager.getTexture(dir + "/" + tinyObjMaterials[i].bump_texname);
-        }
-        {
-            meshMaterials[i].normalTexture = core->resourceManager.getBuiltInTexture(BuiltInTextureEnum::NORMAL);
-        }
+                vertex.tangent = {
+                    mesh->mTangents[v].x,
+                    mesh->mTangents[v].y,
+                    mesh->mTangents[v].z
+                };
 
-        // Metallic texture
-        if (!tinyObjMaterials[i].metallic_texname.empty()) {
-            meshMaterials[i].metallicTexture = core->resourceManager.getTexture(dir + "/" + tinyObjMaterials[i].metallic_texname);
-        } else {
-            meshMaterials[i].metallicTexture = core->resourceManager.getBuiltInTexture(BuiltInTextureEnum::WHITE);
-        }
-        meshMaterials[i].metallicScale = tinyObjMaterials[i].metallic;
+                vertex.biTangent = {
+                    mesh->mBitangents[v].x,
+                    mesh->mBitangents[v].y,
+                    mesh->mBitangents[v].z
+                };
 
-        // Roughness texture
-        if (!tinyObjMaterials[i].roughness_texname.empty()) {
-            meshMaterials[i].roughnessTexture = core->resourceManager.getTexture(dir + "/" + tinyObjMaterials[i].roughness_texname);
-        } else {
-            meshMaterials[i].roughnessTexture = core->resourceManager.getBuiltInTexture(BuiltInTextureEnum::WHITE);
-        }
-        meshMaterials[i].roughnessScale = tinyObjMaterials[i].roughness;
-    }
-
-    for (auto &shape : shapes) {
-        // iterate over faces
-        for (u32 f = 0; f < shape.mesh.indices.size() / 3; ++f) {
-            u32 matId = shape.mesh.material_ids[f];
-
-            // set material to default material if invalid
-            if (matId < 0 || matId >= tinyObjMaterials.size()) {
-                matId = tinyObjMaterials.size() - 1;
+                vertices.emplace_back(vertex);
             }
+        }
 
-            // acorn meshes are associated w/ materials
-            auto &vertices = meshVertices[matId];
+        // Default material
+        Material material;
+        material.albedoTexture = core->resourceManager.getBuiltInTexture(BuiltInTextureEnum::WHITE);
+        material.normalTexture = core->resourceManager.getBuiltInTexture(BuiltInTextureEnum::NORMAL);
+        material.metallicTexture = core->resourceManager.getBuiltInTexture(BuiltInTextureEnum::WHITE);
+        material.metallicScale = 1.0f;
+        material.roughnessTexture = core->resourceManager.getBuiltInTexture(BuiltInTextureEnum::WHITE);
+        material.roughnessScale = 1.0f;
 
-            // add vertices to correct mesh
-            for (u32 v = 0; v < 3; ++v) {
-                tinyobj::index_t idx = shape.mesh.indices[3 * f + v];
+        // Load material
+        if (mesh->mMaterialIndex >= 0) {
+            aiMaterial *aiMat = scene->mMaterials[mesh->mMaterialIndex];
 
-                vertices.emplace_back();
-
-                // set position
-                vertices.back().position = glm::vec3(
-                                               attrib.vertices[3 * idx.vertex_index + 0],
-                                               attrib.vertices[3 * idx.vertex_index + 1],
-                                               attrib.vertices[3 * idx.vertex_index + 2]
-                                           );
-
-                // set normal
-                if (hasNormals) {
-                    vertices.back().normal = glm::vec3(
-                                                 attrib.normals[3 * idx.normal_index + 0],
-                                                 attrib.normals[3 * idx.normal_index + 1],
-                                                 attrib.normals[3 * idx.normal_index + 2]
-                                             );
+            auto loadTexture = [&](aiTextureType type, Texture **location) {
+                if (aiMat->GetTextureCount(type) > 0) {
+                    aiString texRelativePath;
+                    aiMat->GetTexture(type, 0, &texRelativePath);
+                    std::string texPath = dir + std::string(texRelativePath.C_Str());
+                    std::replace(texPath.begin(), texPath.end(), '\\', '/');
+                    *location = core->resourceManager.getTexture(texPath);
                 }
+            };
 
-                vertices.back().uv = glm::vec2(
-                                         attrib.texcoords[2 * idx.texcoord_index + 0],
-                                         attrib.texcoords[2 * idx.texcoord_index + 1]
-                                     );
+            loadTexture(aiTextureType_DIFFUSE, &material.albedoTexture);
+            loadTexture(aiTextureType_NORMALS, &material.normalTexture);
+            loadTexture(aiTextureType_METALNESS, &material.metallicTexture);
+            loadTexture(aiTextureType_DIFFUSE_ROUGHNESS, &material.roughnessTexture);
+
+            // Special case where metallic and roughness are in same texture
+            aiString metalRoughPath;
+            if (aiMat->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE,
+                                  &metalRoughPath) == aiReturn_SUCCESS) {
+                std::string texPath = dir + std::string(metalRoughPath.C_Str());
+                std::replace(texPath.begin(), texPath.end(), '\\', '/');
+
+                // Seems that usually this is occlusion, roughness, metallic (RGB respectively)?
+                core->resourceManager.getTextureSplitComponents(texPath, nullptr, &material.roughnessTexture,
+                                                                &material.metallicTexture, nullptr);
             }
 
-            Vertex &v1 = vertices[vertices.size() - 3];
-            Vertex &v2 = vertices[vertices.size() - 2];
-            Vertex &v3 = vertices[vertices.size() - 1];
-
-            // calculate normals if missing
-            if (!hasNormals) {
-                glm::vec3 u = v2.position - v1.position;
-                glm::vec3 v = v3.position - v1.position;
-
-                glm::vec3 normal = glm::vec3(glm::cross(u, v));
-
-                v1.normal = normal;
-                v2.normal = normal;
-                v3.normal = normal;
-            }
-
-            // calculate tangent and bi-tangent
-            utils::calculate_tangent_and_bi_tangent(v1, v2, v3);
+            aiMat->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR, material.metallicScale);
+            aiMat->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_ROUGHNESS_FACTOR, material.roughnessScale);
         }
-    }
 
-    // Only add meshes with vertices
-    for (u32 i = 0; i < numMeshes; ++i) {
-        if (!meshVertices[i].empty()) {
-            m_meshes.emplace_back(meshVertices[i], meshMaterials[i]);
-        }
+        m_meshes.emplace_back(vertices, material);
     }
 }

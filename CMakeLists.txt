@@ -27,3 +27,8 @@ target_link_libraries(acorn glfw)
 # OpenGL
 find_package(OpenGL REQUIRED)
 target_link_libraries(acorn OpenGL::GL)
+
+# Assimp
+set(BUILD_SHARED_LIBS off)
+add_subdirectory(third-party/assimp)
+target_link_libraries(acorn assimp)
