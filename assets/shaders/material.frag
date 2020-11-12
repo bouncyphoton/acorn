@@ -76,48 +76,8 @@ float geometry_smith(vec3 N, vec3 V, vec3 L, float roughness) {
     return ggx1 * ggx2;
 }
 
-//---------------
-// calculate brdf with cook-torrance for specular and lambert for diffuse
-//---------------
-vec3 calculate_brdf(vec3 albedo, vec3 N, vec3 V, float metallic, float roughness) {
-    vec3 Wo = V;// outgoing light direction
-    vec3 Wi = uSunDirection;// incoming light direction
-    vec3 H = normalize(V + Wi);// halfway vector
-    vec3 F0 = mix(vec3(0.04), albedo, metallic);// material response at normal incidence
-
-    float D = ggx_distribution(N, H, roughness);// distribution
-    vec3  F = fresnel_schlick(max(dot(H, Wo), 0), F0);// fresnel
-    float G = geometry_smith(N, Wo, Wi, roughness);// geometry
-
-    vec3 specular = (D * F * G) / (4 * max(0, dot(Wo, N)) * max(0, dot(Wi, N)) + 0.001);
-
-    vec3 Ks = F;// amount of specularly reflected light
-
-    vec3 Kd = (1 - Ks) * (1 - metallic);// amount of diffused incoming radiance
-
-    vec3 Li = vec3(1);
-
-    return (Kd * albedo / PI + specular) * Li * max(0, dot(N, Wi));
-}
-
-void main() {
-    // TODO: alpha threshold seems a bit high for test models to work, check out textures
-    if (texture(uMaterial.albedo, i.uv).a <= 0.1) discard;
-
-    vec3 albedo = pow(texture(uMaterial.albedo, i.uv).rgb, vec3(2.2));
-    vec3 normal = normalize(i.tbn * (texture(uMaterial.normal, i.uv).rgb * 2 - 1));
-    vec3 view_dir = normalize(uCameraPosition - i.position);
-    float metallic = texture(uMaterial.metallic, i.uv).r * uMaterial.metallic_scale;
-    float roughness = texture(uMaterial.roughness, i.uv).r * uMaterial.roughness_scale;
-
-    vec3 color = vec3(0);
-
-    // sun light
-//    color += calculate_brdf(albedo, normal, view_dir, metallic, roughness);
-
+vec3 calculate_ibl(vec3 albedo, vec3 N, vec3 V, float metallic, float roughness) {
     // environment
-    vec3 N = normal;
-    vec3 V = view_dir;
     vec3 F0 = mix(vec3(0.04), albedo, metallic);
     vec3 F = fresnel_schlick_roughness(max(0, dot(N, V)), F0, roughness);
 
@@ -133,7 +93,47 @@ void main() {
     vec2 env_brdf = texture(uBrdfLut, vec2(NdotV, roughness)).rg;
     vec3 specular = prefiltered_color * (F * env_brdf.x + env_brdf.y);
 
-    color += (diffuse + specular);
+    return diffuse + specular;
+}
+
+//---------------
+// calculate brdf for light
+//---------------
+vec3 calculate_brdf(vec3 albedo, vec3 N, vec3 V, float metallic, float roughness, vec3 Li) {
+    vec3 Wo = V;// outgoing light direction
+    vec3 Wi = uSunDirection;// incoming light direction
+    vec3 H = normalize(V + Wi);// halfway vector
+    vec3 F0 = mix(vec3(0.04), albedo, metallic);// material response at normal incidence
+
+    float D = ggx_distribution(N, H, roughness);// distribution
+    vec3  F = fresnel_schlick(max(dot(H, Wo), 0), F0);// fresnel
+    float G = geometry_smith(N, Wo, Wi, roughness);// geometry
+
+    vec3 specular = (D * F * G) / (4 * max(0, dot(Wo, N)) * max(0, dot(Wi, N)) + 0.001);
+
+    vec3 Ks = F;// amount of specularly reflected light
+
+    vec3 Kd = (1 - Ks) * (1 - metallic);// amount of diffused incoming radiance
+
+    return (Kd * albedo / PI + specular) * Li * max(0, dot(N, Wi));
+}
+
+void main() {
+    // TODO: transparency
+    if (texture(uMaterial.albedo, i.uv).a <= 0.1) discard;
+
+    vec3 albedo = pow(texture(uMaterial.albedo, i.uv).rgb, vec3(2.2));
+    vec3 normal = normalize(i.tbn * (texture(uMaterial.normal, i.uv).rgb * 2 - 1));
+    vec3 view_dir = normalize(uCameraPosition - i.position);
+    float metallic = texture(uMaterial.metallic, i.uv).r * uMaterial.metallic_scale;
+    float roughness = texture(uMaterial.roughness, i.uv).r * uMaterial.roughness_scale;
+
+    vec3 color = vec3(0);
+
+    color += calculate_ibl(albedo, normal, view_dir, metallic, roughness);
+
+    // sun light
+//    color += calculate_brdf(albedo, normal, view_dir, metallic, roughness, vec3(1));
 
     oFragColor = vec4(color, texture(uMaterial.albedo, i.uv).a);
 }

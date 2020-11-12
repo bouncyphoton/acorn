@@ -103,8 +103,84 @@ void Renderer::init() {
     updateIblProbe();
 }
 
-void Renderer::render() {
-    renderFrame();
+void Renderer::render(const Scene &scene) {
+    // TODO: iterate over ibl probes
+    // if needs to update, update
+
+    m_ctx.setRenderTarget(m_hdrFrameTexture);
+    m_ctx.clear(RenderContext::CLEAR_COLOR | RenderContext::CLEAR_DEPTH);
+
+    // draw scene
+    {
+        m_renderStats = {};
+
+        m_ctx.setState(RenderStateBuilder()
+                       .setDepthTest(true)
+                       .build());
+
+        m_materialShader.bind();
+        m_materialShader.setUniform("uDiffuseIrradianceMap", m_diffuseIrradianceCubemap);
+        m_materialShader.setUniform("uPrefilteredEnvironmentMap", m_prefilteredEnvCubemap);
+        m_materialShader.setUniform("uNumPrefilteredEnvMipmapLevels", m_numPrefilteredEnvMipmapLevels);
+        m_materialShader.setUniform("uBrdfLut", m_brdfLut);
+        m_materialShader.setUniform("uSunDirection", scene.getSunDirection());
+        m_materialShader.setUniform("uViewProjectionMatrix", scene.getCamera().getViewProjectionMatrix());
+        m_materialShader.setUniform("uCameraPosition", scene.getCamera().getPosition());
+
+        // render entities
+        for (const Geometry &geometry : scene.getGeometry()) {
+            glm::mat4 modelMatrix = geometry.getTransform().toMatrix();
+            m_materialShader.setUniform("uModelMatrix", modelMatrix);
+            m_materialShader.setUniform("uNormalMatrix", glm::transpose(glm::inverse(modelMatrix)));
+
+            // render each mesh in model
+            for (const Mesh &mesh : geometry.getModel()->getMeshes()) {
+                m_materialShader.setUniform("uMaterial.albedo", *mesh.getMaterial().albedoTexture);
+                m_materialShader.setUniform("uMaterial.normal", *mesh.getMaterial().normalTexture);
+                m_materialShader.setUniform("uMaterial.metallic", *mesh.getMaterial().metallicTexture);
+                m_materialShader.setUniform("uMaterial.metallic_scale", mesh.getMaterial().metallicScale);
+                m_materialShader.setUniform("uMaterial.roughness", *mesh.getMaterial().roughnessTexture);
+                m_materialShader.setUniform("uMaterial.roughness_scale", mesh.getMaterial().roughnessScale);
+
+                mesh.draw();
+
+                ++m_renderStats.drawCalls;
+                m_renderStats.verticesRendered += mesh.getNumVertices();
+            }
+        }
+    }
+
+    // draw sky
+    {
+        m_ctx.setState(RenderStateBuilder()
+                       .setDepthTest(true)
+                       .setDepthWrite(false)
+                       .setDepthFunc(DepthFuncEnum::LESS_EQUAL)
+                       .build());
+
+        Camera skyboxCamera = scene.getCamera();
+        skyboxCamera.setPosition(glm::vec3(0));
+
+        m_skyShader.bind();
+        m_skyShader.setUniform("uViewProjectionMatrix", skyboxCamera.getViewProjectionMatrix());
+        m_skyShader.setUniform("uEnvMap", m_environmentMap);
+
+        drawNVertices(14);
+    }
+
+    // tonemap
+    {
+        m_ctx.setRenderTarget(m_targetTexture);
+        m_ctx.setState(RenderStateBuilder()
+                       .setDepthTest(false)
+                       .build());
+
+        m_tonemapShader.bind();
+        m_tonemapShader.setUniform("uImage", m_hdrFrameTexture);
+        m_tonemapShader.setUniform("uExposure", scene.getCamera().getExposure());
+
+        drawNVertices(4);
+    }
 
     // blit rendered frame to default framebuffer
     m_ctx.getFramebuffer().blitToDefaultFramebuffer(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
@@ -217,86 +293,5 @@ void Renderer::updateIblProbe() {
             // draw cube
             drawNVertices(14);
         }
-    }
-}
-
-void Renderer::renderFrame() {
-    m_ctx.setRenderTarget(m_hdrFrameTexture);
-    m_ctx.clear(RenderContext::CLEAR_COLOR | RenderContext::CLEAR_DEPTH);
-
-    // draw scene
-    {
-        m_renderStats = {};
-
-        m_ctx.setState(RenderStateBuilder()
-                       .setDepthTest(true)
-                       .build());
-
-        m_materialShader.bind();
-        m_materialShader.setUniform("uDiffuseIrradianceMap", m_diffuseIrradianceCubemap);
-        m_materialShader.setUniform("uPrefilteredEnvironmentMap", m_prefilteredEnvCubemap);
-        m_materialShader.setUniform("uNumPrefilteredEnvMipmapLevels", m_numPrefilteredEnvMipmapLevels);
-        m_materialShader.setUniform("uBrdfLut", m_brdfLut);
-        m_materialShader.setUniform("uSunDirection", core->gameState.scene.sunDirection);
-        m_materialShader.setUniform("uViewProjectionMatrix", core->gameState.camera.getViewProjectionMatrix());
-        m_materialShader.setUniform("uCameraPosition", core->gameState.camera.getPosition());
-
-        // render entities
-        for (const Entity &entity : core->gameState.scene.getEntities()) {
-            if (!entity.active) {
-                continue;
-            }
-
-            glm::mat4 modelMatrix = transform_to_matrix(entity.transform);
-            m_materialShader.setUniform("uModelMatrix", modelMatrix);
-            m_materialShader.setUniform("uNormalMatrix", glm::transpose(glm::inverse(modelMatrix)));
-
-            // render each mesh in model
-            for (auto &mesh : entity.model->getMeshes()) {
-                m_materialShader.setUniform("uMaterial.albedo", *mesh.getMaterial().albedoTexture);
-                m_materialShader.setUniform("uMaterial.normal", *mesh.getMaterial().normalTexture);
-                m_materialShader.setUniform("uMaterial.metallic", *mesh.getMaterial().metallicTexture);
-                m_materialShader.setUniform("uMaterial.metallic_scale", mesh.getMaterial().metallicScale);
-                m_materialShader.setUniform("uMaterial.roughness", *mesh.getMaterial().roughnessTexture);
-                m_materialShader.setUniform("uMaterial.roughness_scale", mesh.getMaterial().roughnessScale);
-
-                mesh.draw();
-
-                ++m_renderStats.drawCalls;
-                m_renderStats.verticesRendered += mesh.getNumVertices();
-            }
-        }
-    }
-
-    // draw sky
-    {
-        m_ctx.setState(RenderStateBuilder()
-                       .setDepthTest(true)
-                       .setDepthWrite(false)
-                       .setDepthFunc(DepthFuncEnum::LESS_EQUAL)
-                       .build());
-
-        Camera skyboxCamera = core->gameState.camera;
-        skyboxCamera.setPosition(glm::vec3(0));
-
-        m_skyShader.bind();
-        m_skyShader.setUniform("uViewProjectionMatrix", skyboxCamera.getViewProjectionMatrix());
-        m_skyShader.setUniform("uEnvMap", m_environmentMap);
-
-        drawNVertices(14);
-    }
-
-    // tonemap
-    {
-        m_ctx.setRenderTarget(m_targetTexture);
-        m_ctx.setState(RenderStateBuilder()
-                       .setDepthTest(false)
-                       .build());
-
-        m_tonemapShader.bind();
-        m_tonemapShader.setUniform("uImage", m_hdrFrameTexture);
-        m_tonemapShader.setUniform("uExposure", core->gameState.camera.getExposure());
-
-        drawNVertices(4);
     }
 }

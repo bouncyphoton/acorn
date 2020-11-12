@@ -23,12 +23,41 @@ static void glfw_cursor_pos_callback(GLFWwindow *window, double x, double y) {
 
 Platform::Platform() {
     Log::debug("Platform::Platform()");
-    init();
+    if (!glfwInit()) {
+        Log::fatal("Failed to init GLFW");
+    }
+
+    glfwSetErrorCallback(glfw_error_callback);
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, consts::OPENGL_VERSION_MAJOR);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, consts::OPENGL_VERSION_MINOR);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    m_window = glfwCreateWindow(core->gameState.renderOptions.width, core->gameState.renderOptions.height,
+                                consts::APP_NAME, nullptr, nullptr);
+
+    if (!m_window) {
+        Log::fatal("Failed to create GLFW window");
+    }
+
+    glfwSetWindowUserPointer(m_window, &m_input);
+    glfwSetKeyCallback(m_window, glfw_key_callback);
+    glfwSetCursorPosCallback(m_window, glfw_cursor_pos_callback);
+    glfwMakeContextCurrent(m_window);
+
+    if (gl3wInit()) {
+        Log::fatal("Failed to init gl3w");
+    }
+
+    glfwSwapInterval(core->gameState.renderOptions.vsyncNumSwapFrames);
+
+    m_currentTime = glfwGetTime();
 }
 
 Platform::~Platform() {
     Log::debug("Platform::~Platform()");
-    destroy();
+    glfwDestroyWindow(m_window);
+    glfwTerminate();
 }
 
 void Platform::update() {
@@ -73,43 +102,6 @@ bool Platform::isKeyPressed(u32 key) const {
         return it->second == KeyStateEnum::PRESSED;
     }
     return false;
-}
-
-void Platform::init() {
-    if (!glfwInit()) {
-        Log::fatal("Failed to init GLFW");
-    }
-
-    glfwSetErrorCallback(glfw_error_callback);
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, consts::OPENGL_VERSION_MAJOR);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, consts::OPENGL_VERSION_MINOR);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    m_window = glfwCreateWindow(core->gameState.renderOptions.width, core->gameState.renderOptions.height,
-                                consts::APP_NAME, nullptr, nullptr);
-
-    if (!m_window) {
-        Log::fatal("Failed to create GLFW window");
-    }
-
-    glfwSetWindowUserPointer(m_window, &m_input);
-    glfwSetKeyCallback(m_window, glfw_key_callback);
-    glfwSetCursorPosCallback(m_window, glfw_cursor_pos_callback);
-    glfwMakeContextCurrent(m_window);
-
-    if (gl3wInit()) {
-        Log::fatal("Failed to init gl3w");
-    }
-
-    glfwSwapInterval(core->gameState.renderOptions.vsyncNumSwapFrames);
-
-    m_currentTime = glfwGetTime();
-}
-
-void Platform::destroy() {
-    glfwDestroyWindow(m_window);
-    glfwTerminate();
 }
 
 void Platform::setMouseGrab(bool grabbed) {

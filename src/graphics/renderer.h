@@ -23,7 +23,7 @@ public:
     ~Renderer();
 
     /// Render scene to default framebuffer
-    void render();
+    void render(const Scene &scene);
 
     /// Reload all shaders
     void reloadShaders();
@@ -39,7 +39,6 @@ private:
 
     void precompute();
     void updateIblProbe();
-    void renderFrame();
 
     GraphicsDebugLogger m_debugLogger;
 

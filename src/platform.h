@@ -38,10 +38,6 @@ public:
     float getDeltaTime() const;
 
 private:
-    void init();
-
-    void destroy();
-
     GLFWwindow *m_window = nullptr;
 
     Input m_input;
