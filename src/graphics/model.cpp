@@ -89,6 +89,7 @@ void Model::init(const std::string &path) {
         // Default material
         Material material;
         material.albedoTexture = core->resourceManager.getBuiltInTexture(BuiltInTextureEnum::WHITE);
+        material.albedoScale = glm::vec3(1);
         material.normalTexture = core->resourceManager.getBuiltInTexture(BuiltInTextureEnum::NORMAL);
         material.metallicTexture = core->resourceManager.getBuiltInTexture(BuiltInTextureEnum::WHITE);
         material.metallicScale = 1.0f;
@@ -125,6 +126,10 @@ void Model::init(const std::string &path) {
                 core->resourceManager.getTextureSplitComponents(texPath, nullptr, &material.roughnessTexture,
                                                                 &material.metallicTexture, nullptr);
             }
+
+            aiColor3D aiAlbedoScale;
+            aiMat->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_FACTOR, aiAlbedoScale);
+            material.albedoScale = glm::vec3(aiAlbedoScale.r, aiAlbedoScale.g, aiAlbedoScale.b);
 
             aiMat->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR, material.metallicScale);
             aiMat->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_ROUGHNESS_FACTOR, material.roughnessScale);

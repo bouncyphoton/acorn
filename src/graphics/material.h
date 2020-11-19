@@ -9,6 +9,8 @@
 
 struct Material {
     Texture *albedoTexture = nullptr;
+    glm::vec3 albedoScale = glm::vec3(1);
+
     Texture *normalTexture = nullptr;
 
     Texture *metallicTexture = nullptr;

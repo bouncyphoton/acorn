@@ -12,6 +12,7 @@ in VertexData {
 
 uniform struct {
     sampler2D albedo;
+    vec3 albedo_scale;
     sampler2D normal;
     sampler2D metallic;
     float metallic_scale;
@@ -122,7 +123,7 @@ void main() {
     // TODO: transparency
     if (texture(uMaterial.albedo, i.uv).a <= 0.1) discard;
 
-    vec3 albedo = pow(texture(uMaterial.albedo, i.uv).rgb, vec3(2.2));
+    vec3 albedo = pow(texture(uMaterial.albedo, i.uv).rgb * uMaterial.albedo_scale, vec3(2.2));
     vec3 normal = normalize(i.tbn * (texture(uMaterial.normal, i.uv).rgb * 2 - 1));
     vec3 view_dir = normalize(uCameraPosition - i.position);
     float metallic = texture(uMaterial.metallic, i.uv).r * uMaterial.metallic_scale;

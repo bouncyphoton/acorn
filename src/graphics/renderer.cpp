@@ -136,6 +136,7 @@ void Renderer::render(const Scene &scene) {
             // render each mesh in model
             for (const Mesh &mesh : geometry.getModel()->getMeshes()) {
                 m_materialShader.setUniform("uMaterial.albedo", *mesh.getMaterial().albedoTexture);
+                m_materialShader.setUniform("uMaterial.albedo_scale", mesh.getMaterial().albedoScale);
                 m_materialShader.setUniform("uMaterial.normal", *mesh.getMaterial().normalTexture);
                 m_materialShader.setUniform("uMaterial.metallic", *mesh.getMaterial().metallicTexture);
                 m_materialShader.setUniform("uMaterial.metallic_scale", mesh.getMaterial().metallicScale);
