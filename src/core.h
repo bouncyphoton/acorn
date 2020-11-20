@@ -20,12 +20,13 @@ public:
     /// Quit and cleanup
     [[noreturn]] void quit();
 
-    GameState gameState;
     Config config;
     Platform platform;
     Renderer renderer;
     ResourceManager resourceManager;
     DebugGui debugGui;
+
+    GameState gameState;
 };
 
 extern Core *core;

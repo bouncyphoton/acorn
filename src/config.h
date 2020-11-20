@@ -1,8 +1,13 @@
 #ifndef ACORN_CONFIG_H
 #define ACORN_CONFIG_H
 
+#include "types.h"
+
 struct ConfigData {
     bool debugLoggingEnabled = true;
+    u32 width = 1280;
+    u32 height = 720;
+    u32 vsyncNumSwapFrames = 0;
 };
 
 class Config {

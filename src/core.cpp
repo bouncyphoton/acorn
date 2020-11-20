@@ -22,22 +22,29 @@ void Core::run() {
     camera.setPosition(glm::vec3(1.5, 1, -2));
     camera.setLookRotation(glm::vec2(glm::half_pi<f32>(), 0));
 
+    // Wall
+    for (int i = 0; i < 2; ++i) {
+        for (int j = 0; j < 2; ++j) {
+            scene.addGeometry(
+                Transform(
+                    glm::vec3(4 * j, 0, -5 + 10 * i),
+                    glm::vec3(0, glm::pi<f32>() * i, 0),
+                    glm::vec3(1.0f)
+                ), resourceManager.getModel("../assets/KayKit/models/wallSingle.gltf.glb"));
+        }
+    }
+
     // Boombox
     scene.addGeometry(
-        Transform(
-            glm::vec3(0, 2, 0),
-            glm::vec3(0, glm::half_pi<f32>(), 0),
-            glm::vec3(100.0f)
-        ), resourceManager.getModel("../assets/glTF-Sample-Models/2.0/BoomBox/glTF/BoomBox.gltf"));
-
-    // Helmet
-    scene.addGeometry(
-        Transform(
-            glm::vec3(0, 0, 2.5),
-            glm::vec3(0, glm::three_over_two_pi<f32>(), 0),
-            glm::vec3(5.0f)
-        ), resourceManager.getModel("../assets/glTF-Sample-Models/2.0/FlightHelmet/glTF/FlightHelmet.gltf")
+            Transform(
+                    glm::vec3(0, 2, 0),
+                    glm::vec3(0, 0, 0),
+                    glm::vec3(100.0f)
+            ), resourceManager.getModel("../assets/glTF-Sample-Models/2.0/BoomBox/glTF/BoomBox.gltf")
     );
+
+    // IBL probe
+    scene.addIblProbe(glm::vec3(0, 3, 0));
 
     while (true) {
         platform.update();
@@ -68,12 +75,13 @@ void Core::run() {
         }
 
         if (platform.isMouseGrabbed()) {
-            glm::vec2 mouseDelta = platform.getMouseDelta() / glm::vec2(gameState.renderOptions.width,
-                                                                        gameState.renderOptions.height);
+            glm::vec2 mouseDelta = platform.getMouseDelta() / glm::vec2(config.getConfigData().width,
+                                                                        config.getConfigData().height);
             camera.addLookRotation(mouseDelta);
         }
 
-        renderer.render(gameState.scene);
+        renderer.update(scene);
+        renderer.render(scene);
 
         debugGui.draw();
     }

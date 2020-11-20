@@ -100,9 +100,8 @@ vec3 calculate_ibl(vec3 albedo, vec3 N, vec3 V, float metallic, float roughness)
 //---------------
 // calculate brdf for light
 //---------------
-vec3 calculate_brdf(vec3 albedo, vec3 N, vec3 V, float metallic, float roughness, vec3 Li) {
+vec3 calculate_brdf(vec3 albedo, vec3 N, vec3 V, float metallic, float roughness, vec3 Wi, vec3 Li) {
     vec3 Wo = V;// outgoing light direction
-    vec3 Wi = uSunDirection;// incoming light direction
     vec3 H = normalize(V + Wi);// halfway vector
     vec3 F0 = mix(vec3(0.04), albedo, metallic);// material response at normal incidence
 
@@ -134,7 +133,7 @@ void main() {
     color += calculate_ibl(albedo, normal, view_dir, metallic, roughness);
 
     // sun light
-//    color += calculate_brdf(albedo, normal, view_dir, metallic, roughness, vec3(1));
+    color += calculate_brdf(albedo, normal, view_dir, metallic, roughness, uSunDirection, vec3(1));
 
     oFragColor = vec4(color, texture(uMaterial.albedo, i.uv).a);
 }

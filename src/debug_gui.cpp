@@ -70,8 +70,10 @@ void DebugGui::draw() {
     // rendering
     //----------
 
+    const ConfigData &config = core->config.getConfigData();
+
     ImGui::Render();
-    glViewport(0, 0, core->gameState.renderOptions.width, core->gameState.renderOptions.height);
+    glViewport(0, 0, config.width, config.height);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 

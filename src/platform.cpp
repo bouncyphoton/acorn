@@ -27,14 +27,15 @@ Platform::Platform() {
         Log::fatal("Failed to init GLFW");
     }
 
+    const ConfigData &config = core->config.getConfigData();
+
     glfwSetErrorCallback(glfw_error_callback);
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, consts::OPENGL_VERSION_MAJOR);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, consts::OPENGL_VERSION_MINOR);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    m_window = glfwCreateWindow(core->gameState.renderOptions.width, core->gameState.renderOptions.height,
-                                consts::APP_NAME, nullptr, nullptr);
+    m_window = glfwCreateWindow(config.width, config.height, consts::APP_NAME, nullptr, nullptr);
 
     if (!m_window) {
         Log::fatal("Failed to create GLFW window");
@@ -49,7 +50,7 @@ Platform::Platform() {
         Log::fatal("Failed to init gl3w");
     }
 
-    glfwSwapInterval(core->gameState.renderOptions.vsyncNumSwapFrames);
+    glfwSwapInterval(config.vsyncNumSwapFrames);
 
     m_currentTime = glfwGetTime();
 }

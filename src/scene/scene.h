@@ -4,6 +4,7 @@
 #include "types.h"
 #include "transform.h"
 #include "graphics/model.h"
+#include "graphics/ibl_probe.h"
 #include "camera.h"
 #include <vector>
 
@@ -33,8 +34,28 @@ public:
         m_geometry.emplace_back(transform, model);
     }
 
+    void addIblProbe(glm::vec3 position) {
+        m_iblProbes.emplace_back(position);
+    }
+
     const std::vector<Geometry> &getGeometry() const {
         return m_geometry;
+    }
+
+    std::vector<IblProbe> &getIblProbes() {
+        return m_iblProbes;
+    }
+
+    const std::vector<IblProbe> &getIblProbes() const {
+        return m_iblProbes;
+    }
+
+    IblProbe &getDistantIblProbe() {
+        return m_distantIblProbe;
+    }
+
+    const IblProbe &getDistantIblProbe() const {
+        return m_distantIblProbe;
     }
 
     Camera &getCamera() {
@@ -50,6 +71,8 @@ public:
     }
 private:
     std::vector<Geometry> m_geometry;
+    std::vector<IblProbe> m_iblProbes;
+    IblProbe m_distantIblProbe;
     Camera m_camera;
     glm::vec3 m_sunDirection;
 };

@@ -22,6 +22,9 @@ public:
     Renderer();
     ~Renderer();
 
+    /// Update entities in scene that need the renderer
+    void update(Scene &scene);
+
     /// Render scene to default framebuffer
     void render(const Scene &scene);
 
