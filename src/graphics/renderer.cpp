@@ -64,28 +64,6 @@ void Renderer::init() {
     // init textures
     //--------------
 
-    // TODO: don't hardcode skybox textures into renderer
-    stbi_set_flip_vertically_on_load(0);
-    s32 w, h;
-    void *data[6] = {
-        stbi_loadf("../assets/env/px.hdr", &w, &h, nullptr, 3),
-        stbi_loadf("../assets/env/nx.hdr", &w, &h, nullptr, 3),
-        stbi_loadf("../assets/env/py.hdr", &w, &h, nullptr, 3),
-        stbi_loadf("../assets/env/ny.hdr", &w, &h, nullptr, 3),
-        stbi_loadf("../assets/env/pz.hdr", &w, &h, nullptr, 3),
-        stbi_loadf("../assets/env/nz.hdr", &w, &h, nullptr, 3)
-    };
-    if (w != h) {
-        Log::fatal("skybox side textures are not square");
-    }
-    m_environmentMap.setImage(w, TextureFormatEnum::RGB16F, data);
-    for (int i = 0; i < 6; ++i) {
-        stbi_image_free(data[i]);
-    }
-    stbi_set_flip_vertically_on_load(1);
-
-    m_diffuseIrradianceCubemap.setImage(consts::DIFFUSE_IRRADIANCE_TEXTURE_SIZE, TextureFormatEnum::RGB16F);
-    m_prefilteredEnvCubemap.setImage(consts::PREFILTERED_ENVIRONMENT_MAP_TEXTURE_SIZE, TextureFormatEnum::RGB16F);
     m_brdfLut.setImage(consts::BRDF_LUT_TEXTURE_SIZE, consts::BRDF_LUT_TEXTURE_SIZE, TextureFormatEnum::RG16F);
     m_hdrFrameTexture.setImage(config.width, config.height, TextureFormatEnum::RGB16F);
     m_targetTexture.setImage(config.width, config.height, TextureFormatEnum::RGBA8);
@@ -100,7 +78,6 @@ void Renderer::init() {
     }
 
     precompute();
-    updateIblProbe();
 }
 
 void Renderer::update(Scene &scene) {
@@ -365,69 +342,4 @@ void Renderer::precompute() {
 
     // Generate mipmap
     m_brdfLut.generateMipmap();
-}
-
-void Renderer::updateIblProbe() {
-    // view and projection matrices for cubemap rendering
-    glm::mat4 views[6] = {
-        glm::lookAt(glm::vec3(0, 0, 0), glm::vec3(1, 0, 0), glm::vec3(0, -1, 0)),
-        glm::lookAt(glm::vec3(0, 0, 0), glm::vec3(-1, 0, 0), glm::vec3(0, -1, 0)),
-        glm::lookAt(glm::vec3(0, 0, 0), glm::vec3(0, 1, 0), glm::vec3(0, 0, 1)),
-        glm::lookAt(glm::vec3(0, 0, 0), glm::vec3(0, -1, 0), glm::vec3(0, 0, -1)),
-        glm::lookAt(glm::vec3(0, 0, 0), glm::vec3(0, 0, 1), glm::vec3(0, -1, 0)),
-        glm::lookAt(glm::vec3(0, 0, 0), glm::vec3(0, 0, -1), glm::vec3(0, -1, 0))
-    };
-    glm::mat4 proj = glm::perspective(glm::half_pi<f32>(), 1.0f, 0.01f, 10.0f);
-
-    // TODO: convolution/prefiltering could be improved performance-wise
-
-    //-------------------------------
-    // diffuse irradiance convolution
-    //-------------------------------
-
-    m_ctx.setState(RenderStateBuilder()
-                   .setDepthTest(false)
-                   .build());
-
-    m_diffuseIrradianceShader.bind();
-    m_diffuseIrradianceShader.setUniform("uEnvMap", m_environmentMap);
-
-    for (u32 face = 0; face < 6; ++face) {
-        // set current face as output color attachment
-        m_diffuseIrradianceShader.setUniform("uViewProjectionMatrix", proj * views[face]);
-        m_ctx.setRenderTarget(m_diffuseIrradianceCubemap, (RenderContext::CubemapFaceEnum)face);
-        m_ctx.clear(RenderContext::CLEAR_COLOR);
-
-        // draw cube
-        drawNVertices(14);
-    }
-
-    // update mipmap for diffuse irradiance cubemap
-    m_diffuseIrradianceCubemap.generateMipmap();
-
-    //--------------------------
-    // prefilter environment map
-    //--------------------------
-
-    m_envMapPrefilterShader.bind();
-    m_envMapPrefilterShader.setUniform("uEnvMap", m_environmentMap);
-
-    // calculate mipmap levels
-    m_numPrefilteredEnvMipmapLevels = consts::NUM_PREFILTERED_MIP_LEVELS;
-
-    for (u32 level = 0; level <= m_numPrefilteredEnvMipmapLevels; ++level) {
-        // set current roughness for prefilter
-        f32 roughness = (f32) level / (f32) (m_numPrefilteredEnvMipmapLevels);
-        m_envMapPrefilterShader.setUniform("uRoughness", roughness);
-
-        for (u32 face = 0; face < 6; ++face) {
-            // set current face as output color attachment
-            m_envMapPrefilterShader.setUniform("uViewProjectionMatrix", proj * views[face]);
-            m_ctx.setRenderTarget(m_prefilteredEnvCubemap, (RenderContext::CubemapFaceEnum)face, level);
-            m_ctx.clear(RenderContext::CLEAR_COLOR);
-
-            // draw cube
-            drawNVertices(14);
-        }
-    }
 }

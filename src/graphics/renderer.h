@@ -41,7 +41,6 @@ private:
     void drawNVertices(u32 n) const;
 
     void precompute();
-    void updateIblProbe();
 
     GraphicsDebugLogger m_debugLogger;
 
@@ -57,10 +56,6 @@ private:
     Shader m_skyShader;
     Shader m_diffuseIrradianceShader;
     Shader m_envMapPrefilterShader;
-    TextureCubemap m_environmentMap;
-    TextureCubemap m_diffuseIrradianceCubemap;
-    TextureCubemap m_prefilteredEnvCubemap;
-    s32 m_numPrefilteredEnvMipmapLevels;
 
     // materials
     Shader m_materialShader;
