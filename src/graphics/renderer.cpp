@@ -276,7 +276,7 @@ void Renderer::render(const Scene &scene) {
 
         m_skyShader.bind();
         m_skyShader.setUniform("uViewProjectionMatrix", skyboxCamera.getViewProjectionMatrix());
-        m_skyShader.setUniform("uEnvMap", scene.getIblProbes().front().getEnvironmentMap());
+        m_skyShader.setUniform("uEnvMap", scene.getDistantIblProbe().getEnvironmentMap());
 
         drawNVertices(14);
     }

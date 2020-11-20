@@ -38,7 +38,7 @@ void Core::run() {
     scene.addGeometry(
             Transform(
                     glm::vec3(0, 2, 0),
-                    glm::vec3(0, 0, 0),
+                    glm::vec3(0, glm::quarter_pi<f32>(), 0),
                     glm::vec3(100.0f)
             ), resourceManager.getModel("../assets/glTF-Sample-Models/2.0/BoomBox/glTF/BoomBox.gltf")
     );

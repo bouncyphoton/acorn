@@ -41,7 +41,6 @@ private:
 
     void destroy();
 
-    // TODO: remove unnecessary pointers
     std::unordered_map<std::string, Model *> m_models;
     std::unordered_map<std::string, Texture *> m_textures;
     Texture2D m_textureBlack;   // (0, 0, 0)

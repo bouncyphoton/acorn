@@ -5,8 +5,6 @@
 #include "graphics/texture.h"
 #include <GL/gl3w.h>
 
-// TODO: renderbuffer
-
 class Framebuffer {
 public:
     Framebuffer();
